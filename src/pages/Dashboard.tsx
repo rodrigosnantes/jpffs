@@ -125,7 +125,7 @@ export const Dashboard = () => {
                         </div>
 
                         {lastMatch ? (
-                            <div className="flex-1 flex flex-col justify-center">
+                            <div className="flex-1 flex flex-col justify-center gap-4">
                                 <div className="flex items-center justify-between px-6 py-8 bg-white/5 rounded-2xl border border-white/5">
                                     <div className="text-center">
                                         <span className="text-yellow-500 font-bold text-lg block mb-1">Time A</span>
@@ -143,6 +143,31 @@ export const Dashboard = () => {
                                             {lastMatch.team_b_score}
                                         </span>
                                     </div>
+                                </div>
+
+                                {/* Players per team */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                        { ids: lastMatch.team_a_players ?? [], label: 'Time A', color: 'text-yellow-500', dot: 'bg-yellow-500' },
+                                        { ids: lastMatch.team_b_players ?? [], label: 'Time B', color: 'text-blue-400', dot: 'bg-blue-400' },
+                                    ].map(({ ids, label, color, dot }) => (
+                                        <div key={label} className="bg-white/3 rounded-xl p-3 border border-white/5">
+                                            <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${color}`}>{label}</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {ids.map(pid => {
+                                                    const p = players.find(pl => pl.id === pid);
+                                                    if (!p) return null;
+                                                    return (
+                                                        <span key={pid} className="flex items-center gap-1 text-[11px] text-gray-400 bg-white/5 px-2 py-0.5 rounded-full">
+                                                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
+                                                            {p.name.split(' ')[0]}
+                                                        </span>
+                                                    );
+                                                })}
+                                                {ids.length === 0 && <span className="text-gray-600 text-xs">—</span>}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         ) : (

@@ -18,17 +18,18 @@ begin
 
   -- Insert into players (Auto-create player for the user)
   -- Default position 'Line' and level 3 (Average)
-  insert into public.players (profile_id, name, position, level)
+  insert into public.players (profile_id, name, position, level, attributes)
   values (
     new_profile_id, 
     coalesce(new.raw_user_meta_data ->> 'name', 'Sem Nome'), 
     coalesce(new.raw_user_meta_data ->> 'position', 'Line'), -- Get position from metadata or default
-    3
+    3,
+    '{"attack": 50, "defense": 50, "pace": 50, "shooting": 50, "physical": 50, "passing": 50}'::jsonb
   );
 
   return new;
 end;
-$$;
+$$;   
 
 -- 3. Create Trigger on auth.users
 drop trigger if exists on_auth_user_created on auth.users;

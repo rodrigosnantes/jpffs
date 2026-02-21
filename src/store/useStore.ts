@@ -211,22 +211,16 @@ export const useStore = create<AppState>((set, get) => ({
                 status: 'finished',
                 team_a_score: teamAScore,
                 team_b_score: teamBScore,
-                end_time: new Date().toISOString()
             })
             .eq('id', id);
 
-        if (matchError) console.error('Error ending match:', matchError);
+        if (matchError) {
+            console.error('Error ending match:', matchError);
+            return;
+        }
 
-        // 2. Determine Match Result
         const teamAWin = teamAScore > teamBScore;
         const teamBWin = teamBScore > teamAScore;
-        // const isDraw = teamAScore === teamBScore;
-
-        // 3. Update Players Stats (Batch)
-        // This is complex to do efficiently with single RLS calls, 
-        // ideally implemented as a specialized RPC function in Supabase.
-        // For MVP, we will fetch, calculate, and update one by one or leave it for "Realtime" to handle?
-        // Let's keep the client-side logic for now but update DB.
 
         const allPlayers = [...generatedTeams.teamA, ...generatedTeams.teamB];
 
@@ -278,8 +272,9 @@ export const useStore = create<AppState>((set, get) => ({
             }
         }));
 
-        // Refresh local player list
+        // Refresh local player and match lists
         get().fetchPlayers();
+        get().fetchMatches();
     },
 
     addEvent: async (eventData) => {

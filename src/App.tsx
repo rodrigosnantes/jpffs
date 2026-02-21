@@ -10,6 +10,8 @@ import { SignUp } from './pages/SignUp';
 import { Profile } from './pages/Profile';
 import { Teams } from './pages/Teams';
 import { Leaderboard } from './pages/Leaderboard';
+import { Matches } from './pages/Matches';
+import { MatchDetail } from './pages/MatchDetail';
 import { useAuthStore } from './store/useAuthStore';
 import { useStore } from './store/useStore';
 
@@ -35,6 +37,8 @@ export default function App() {
           <Route path="/players/:id" element={<PlayerEdit />} />
           <Route path="/teams" element={<Teams />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/matches" element={<Matches />} />
+          <Route path="/matches/:id" element={<MatchDetail />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

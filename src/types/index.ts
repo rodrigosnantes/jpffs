@@ -31,13 +31,15 @@ export interface Player {
     };
 }
 
-export type MatchStatus = 'Scheduled' | 'Finished';
+export type MatchStatus = 'scheduled' | 'live' | 'finished';
 
 export interface Match {
     id: string;
     date: string; // ISO Date string
     team_a_score: number | null;
     team_b_score: number | null;
+    team_a_players: string[]; // Array of player IDs
+    team_b_players: string[]; // Array of player IDs
     status: MatchStatus;
 }
 

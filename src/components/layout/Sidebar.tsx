@@ -5,6 +5,7 @@ import {
     Users,
     Trophy,
     Shield,
+    Calendar,
     Settings,
     Menu,
     X,
@@ -24,6 +25,7 @@ export const Sidebar = () => {
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
         { name: 'Jogadores', path: '/players', icon: Users },
         { name: 'Sorteio', path: '/teams', icon: Shield },
+        { name: 'Partidas', path: '/matches', icon: Calendar },
         { name: 'Classificação', path: '/leaderboard', icon: Trophy },
         { name: 'Configurações', path: '/settings', icon: Settings },
     ];

@@ -4,7 +4,7 @@ import { Card } from '../components/ui/Card';
 import { Trophy, Medal, TrendingUp } from 'lucide-react';
 
 export const Leaderboard = () => {
-    const { players } = useStore();
+    const { players, matches } = useStore();
 
     const sortedPlayers = useMemo(() => {
         return [...players]
@@ -18,6 +18,36 @@ export const Leaderboard = () => {
                 return b.stats.goals - a.stats.goals;
             });
     }, [players]);
+
+
+    // Finished matches ordered by most recent first
+    const finishedMatches = useMemo(() => {
+        return matches
+            .filter(m => m.status === 'finished')
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [matches]);
+
+
+    /**
+     * Returns the last 5 match results for a given player based on real match data.
+     * Returns an empty array if the player has no finished matches yet.
+     */
+    const getLast5 = (playerId: string): ('W' | 'D' | 'L')[] => {
+        const playerMatches = finishedMatches.filter(m =>
+            (m.team_a_players ?? []).includes(playerId) ||
+            (m.team_b_players ?? []).includes(playerId)
+        );
+
+        return playerMatches.slice(0, 5).reverse().map(m => {
+            const inTeamA = (m.team_a_players ?? []).includes(playerId);
+            const scoreA = m.team_a_score ?? 0;
+            const scoreB = m.team_b_score ?? 0;
+
+            if (scoreA === scoreB) return 'D';
+            const myTeamWon = inTeamA ? scoreA > scoreB : scoreB > scoreA;
+            return myTeamWon ? 'W' : 'L';
+        });
+    };
 
     const getRankIcon = (index: number) => {
         switch (index) {
@@ -34,12 +64,6 @@ export const Leaderboard = () => {
             case 'D': return <div className="w-2 h-2 rounded-full bg-gray-500" title="Empate" />;
             case 'L': return <div className="w-2 h-2 rounded-full bg-red-500" title="Derrota" />;
         }
-    };
-
-    // Mock function for last 5 games since we don't have per-match history yet
-    const getMockLast5 = () => {
-        const results: ('W' | 'D' | 'L')[] = ['W', 'W', 'D', 'L', 'W'];
-        return results.sort(() => Math.random() - 0.5);
     };
 
     return (
@@ -66,35 +90,42 @@ export const Leaderboard = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {sortedPlayers.map((player, index) => (
-                                <tr key={player.id} className="hover:bg-white/5 transition-colors group">
-                                    <td className="p-4 text-center font-bold">
-                                        <div className="flex justify-center">{getRankIcon(index)}</div>
-                                    </td>
-                                    <td className="p-4 font-medium flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-primary group-hover:bg-primary group-hover:text-background transition-colors">
-                                            {player.name.substring(0, 2).toUpperCase()}
-                                        </div>
-                                        {player.name}
-                                        {index < 3 && <TrendingUp size={14} className="text-green-500 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />}
-                                    </td>
-                                    <td className="p-4 text-center font-bold text-lg text-primary bg-white/5">
-                                        {player.points}
-                                    </td>
-                                    <td className="p-4 text-center text-gray-300">{player.stats.matches_played}</td>
-                                    <td className="p-4 text-center text-green-400 font-medium">{player.stats.wins}</td>
-                                    <td className="p-4 text-center text-gray-400 font-medium">{player.stats.draws}</td>
-                                    <td className="p-4 text-center text-red-400 font-medium">{player.stats.losses}</td>
-                                    <td className="p-4 text-center font-mono">{player.stats.goals}</td>
-                                    <td className="p-4 text-center">
-                                        <div className="flex justify-center gap-1.5">
-                                            {getMockLast5().map((res, i) => (
-                                                <div key={i}>{getLast5Icon(res)}</div>
-                                            ))}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {sortedPlayers.map((player, index) => {
+                                const last5 = getLast5(player.id);
+                                return (
+                                    <tr key={player.id} className="hover:bg-white/5 transition-colors group">
+                                        <td className="p-4 text-center font-bold">
+                                            <div className="flex justify-center">{getRankIcon(index)}</div>
+                                        </td>
+                                        <td className="p-4 font-medium flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-primary group-hover:bg-primary group-hover:text-background transition-colors">
+                                                {player.name.substring(0, 2).toUpperCase()}
+                                            </div>
+                                            {player.name}
+                                            {index < 3 && <TrendingUp size={14} className="text-green-500 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                                        </td>
+                                        <td className="p-4 text-center font-bold text-lg text-primary bg-white/5">
+                                            {player.points}
+                                        </td>
+                                        <td className="p-4 text-center text-gray-300">{player.stats.matches_played}</td>
+                                        <td className="p-4 text-center text-green-400 font-medium">{player.stats.wins}</td>
+                                        <td className="p-4 text-center text-gray-400 font-medium">{player.stats.draws}</td>
+                                        <td className="p-4 text-center text-red-400 font-medium">{player.stats.losses}</td>
+                                        <td className="p-4 text-center font-mono">{player.stats.goals}</td>
+                                        <td className="p-4">
+                                            {last5.length > 0 ? (
+                                                <div className="flex items-center justify-center gap-1">
+                                                    {last5.map((result, i) => (
+                                                        <span key={i}>{getLast5Icon(result)}</span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-600 text-xs text-center block">—</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

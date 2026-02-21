@@ -19,6 +19,15 @@ export const SignUp = () => {
         setIsLoading(true);
         setError(null);
 
+        const defaultAttributes = {
+            attack: 50,
+            defense: 50,
+            pace: 50,
+            shooting: 50,
+            physical: 50,
+            passing: 50,
+        };
+
         try {
             const { data, error } = await supabase.auth.signUp({
                 email,
@@ -34,6 +43,29 @@ export const SignUp = () => {
             if (error) throw error;
 
             if (data.user) {
+                // Wait briefly for the trigger to create the player row
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Find the player created by the trigger and ensure attributes are set
+                const { data: players, error: fetchError } = await supabase
+                    .from('players')
+                    .select('id, attributes')
+                    .eq('profile_id', data.user.id)
+                    .limit(1);
+
+                if (!fetchError && players && players.length > 0) {
+                    const player = players[0];
+                    const hasAttributes = player.attributes &&
+                        Object.keys(player.attributes).length > 0;
+
+                    if (!hasAttributes) {
+                        await supabase
+                            .from('players')
+                            .update({ attributes: defaultAttributes })
+                            .eq('id', player.id);
+                    }
+                }
+
                 alert('Conta criada com sucesso! Você já pode fazer login.');
                 navigate('/login');
             }

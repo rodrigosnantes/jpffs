@@ -1,0 +1,25 @@
+Roadmap de Funcionalidades — JPFFS Manager
+
+🔴 Alta prioridade (impacto direto no dia a dia)
+#	Funcionalidade	Descrição
+1	Histórico de Partidas	Página /matches listando todas as partidas finalizadas com placar, data, times e link para detalhes
+2	Detalhe da Partida	Página /matches/:id com placar por time, lista de eventos (gols, cartões) e MVP da partida
+3	Presença por Partida	Controle de quais jogadores confirmaram presença antes de iniciar o sorteio
+4	Foto do Jogador	Upload de avatar via Supabase Storage para substituir as iniciais
+
+🟡 Média prioridade (enriquecem a experiência)
+#	Funcionalidade	Descrição
+5	Rankings Alternativos	Tabs no Leaderboard: Goleadores, Assistentes, Cartões, Aproveitamento
+6	Radar no PlayerEdit	Visualizar o gráfico Radar ao lado dos sliders de atributos na edição
+7	MVP automático	Ao encerrar partida, calcular e exibir MVP baseado em gols + assists
+8	Notificações em tempo real	Toast ao marcar gol/evento durante partida ao vivo (já usa Supabase Realtime)
+9	Perfil Público do Jogador	Página /jogadores/:id pública com stats completas + radar (sem formulário de edição)
+
+🟢 Baixa prioridade / Extras
+#	Funcionalidade	Descrição
+10	Temporadas	Agrupar partidas por temporada/período e zerar stats por período
+11	Modo Admin	Roles de admin para restringir quem pode editar jogadores/encerrar partidas
+12	Exportar PDF/Imagem	Gerar "cartão de jogador" estilo FIFA para compartilhar nas redes
+13	Dark/Light mode	Toggle de tema
+14	PWA	Tornar o app instalável no celular via manifest.json + Service Worker
+Quer que eu implemente alguma(s) dessas funcionalidades? Me diz qual(is) te interessa(m) mais que eu já monto o plano de implementação detalhado.
