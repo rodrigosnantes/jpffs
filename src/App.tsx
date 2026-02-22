@@ -12,6 +12,7 @@ import { Teams } from './pages/Teams';
 import { Leaderboard } from './pages/Leaderboard';
 import { Matches } from './pages/Matches';
 import { MatchDetail } from './pages/MatchDetail';
+import { Attendance } from './pages/Attendance';
 import { useAuthStore } from './store/useAuthStore';
 import { useStore } from './store/useStore';
 
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/players" element={<Players />} />
           <Route path="/players/:id" element={<PlayerEdit />} />
           <Route path="/teams" element={<Teams />} />
+          <Route path="/attendance" element={<Attendance />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/matches" element={<Matches />} />
           <Route path="/matches/:id" element={<MatchDetail />} />

@@ -6,6 +6,7 @@ interface AppState {
     players: Player[];
     matches: Match[];
     generatedTeams: { teamA: Player[], teamB: Player[] } | null;
+    lastMVP: { id: string; name: string; goals: number; assists: number; team: 'A' | 'B' } | null;
 
     // Live Match State
     currentMatch: LiveMatchState;
@@ -25,12 +26,14 @@ interface AppState {
     endMatch: () => void;
     addEvent: (event: Omit<MatchEvent, 'id' | 'timestamp'>) => void;
     resetMatch: () => void;
+    clearMVP: () => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
     players: [],
     matches: [],
     generatedTeams: null,
+    lastMVP: null,
 
     currentMatch: {
         isActive: false,
@@ -259,8 +262,19 @@ export const useStore = create<AppState>((set, get) => ({
             await supabase.from('players').update({ stats: newStats }).eq('id', player.id);
         }
 
+        // ── Calculate MVP before reset ─────────────────────────────────────────
+        const allForMVP = [...generatedTeams.teamA, ...generatedTeams.teamB];
+        const mvpScores = allForMVP.map(p => {
+            const goals = events.filter(e => e.playerId === p.id && e.type === 'Goal').length;
+            const assists = events.filter(e => e.assistId === p.id).length;
+            const team: 'A' | 'B' = generatedTeams.teamA.some(t => t.id === p.id) ? 'A' : 'B';
+            return { id: p.id, name: p.name, goals, assists, score: goals * 2 + assists, team };
+        }).filter(p => p.score > 0).sort((a, b) => b.score - a.score);
+        const mvp = mvpScores[0] ?? null;
+
         // 4. Reset Local State
         set((state) => ({
+            lastMVP: mvp,
             currentMatch: {
                 ...state.currentMatch,
                 isActive: false,
@@ -276,6 +290,8 @@ export const useStore = create<AppState>((set, get) => ({
         get().fetchPlayers();
         get().fetchMatches();
     },
+
+    clearMVP: () => set({ lastMVP: null }),
 
     addEvent: async (eventData) => {
         const state = get();

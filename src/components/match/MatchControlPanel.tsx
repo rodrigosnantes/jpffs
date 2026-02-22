@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { Play, Square, Goal, ShieldAlert, Flag, ShieldBan } from 'lucide-react';
+import { Play, Square, Goal, ShieldAlert, Flag, ShieldBan, Star, RefreshCw } from 'lucide-react';
 import { EventModal } from './EventModal';
 import type { EventType } from '../../types';
 import { cn } from '../../utils/cn';
 
 export const MatchControlPanel = () => {
-    const { currentMatch, generatedTeams, players, startMatch, pauseMatch, resumeMatch, endMatch, addEvent } = useStore();
+    const { currentMatch, generatedTeams, players, lastMVP, startMatch, pauseMatch, resumeMatch, endMatch, addEvent, resetMatch, clearMVP } = useStore();
     const [modalOpen, setModalOpen] = useState(false);
     const [activeTeam, setActiveTeam] = useState<'A' | 'B' | null>(null);
     const [eventType, setEventType] = useState<EventType | null>(null);
@@ -74,8 +74,65 @@ export const MatchControlPanel = () => {
         return players.find(p => p.id === id)?.name || 'Desconhecido';
     };
 
+    // ── MVP Card (shown after match ends) ─────────────────────────────────
+    const matchJustEnded = !currentMatch.isActive && currentMatch.totalElapsedTime === 0 && lastMVP;
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+
+            {/* MVP Celebration Card */}
+            {matchJustEnded && (
+                <div className="relative overflow-hidden rounded-2xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-surface to-black/40 animate-in zoom-in-95 duration-500">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none" />
+                    <div className="relative flex flex-col items-center text-center gap-4 py-10 px-6">
+                        <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-widest">
+                            <Star size={14} className="fill-amber-400" />
+                            MVP da Partida
+                            <Star size={14} className="fill-amber-400" />
+                        </div>
+
+                        {/* Avatar */}
+                        <div className="relative">
+                            <div className="w-24 h-24 rounded-full bg-amber-500/20 border-4 border-amber-500/50 flex items-center justify-center text-3xl font-black text-amber-300 shadow-xl shadow-amber-500/20">
+                                {lastMVP.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1.5">
+                                <Star size={12} className="fill-white text-white" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <h2 className="text-2xl font-black text-white">{lastMVP.name}</h2>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${lastMVP.team === 'A'
+                                    ? 'bg-yellow-500/10 text-yellow-400'
+                                    : 'bg-blue-500/10 text-blue-400'
+                                }`}>
+                                Time {lastMVP.team === 'A' ? 'Amarelo' : 'Azul'}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-8 py-3 px-8 bg-black/20 rounded-2xl border border-white/5">
+                            <div className="text-center">
+                                <div className="text-3xl font-black text-green-400">{lastMVP.goals}</div>
+                                <div className="text-[10px] text-gray-500 uppercase tracking-wider">Gols</div>
+                            </div>
+                            <div className="w-px h-10 bg-white/10" />
+                            <div className="text-center">
+                                <div className="text-3xl font-black text-cyan-400">{lastMVP.assists}</div>
+                                <div className="text-[10px] text-gray-500 uppercase tracking-wider">Assists</div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => { clearMVP(); resetMatch(); }}
+                            className="flex items-center gap-2 mt-2 px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-semibold text-gray-300 transition-colors"
+                        >
+                            <RefreshCw size={14} />
+                            Nova Partida
+                        </button>
+                    </div>
+                </div>
+            )}
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold font-header text-primary">Painel da Partida</h2>
                 <div className="flex gap-3">

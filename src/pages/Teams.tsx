@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -6,10 +6,31 @@ import { Shield, Users, RefreshCw, Trophy } from 'lucide-react';
 import { generateTeams } from '../utils/teamSorter';
 import { cn } from '../utils/cn';
 import { MatchControlPanel } from '../components/match/MatchControlPanel';
+import { supabase } from '../lib/supabase';
 
 export const Teams = () => {
     const { players, generatedTeams, setGeneratedTeams } = useStore();
     const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+    const [confirmedIds, setConfirmedIds] = useState<string[]>([]);
+    const [attendanceLoaded, setAttendanceLoaded] = useState(false);
+
+    // Load today's confirmed players
+    useEffect(() => {
+        const today = new Date().toISOString().split('T')[0];
+        supabase
+            .from('attendance')
+            .select('player_id')
+            .eq('date', today)
+            .then(({ data }) => {
+                const ids = (data ?? []).map((r: { player_id: string }) => r.player_id);
+                setConfirmedIds(ids);
+                setSelectedPlayerIds(ids); // auto-select all confirmed
+                setAttendanceLoaded(true);
+            });
+    }, []);
+
+    // Only show players confirmed in attendance
+    const attendedPlayers = players.filter(p => confirmedIds.includes(p.id));
 
     const handleTogglePlayer = (id: string) => {
         if (selectedPlayerIds.includes(id)) {
@@ -20,16 +41,15 @@ export const Teams = () => {
     };
 
     const handleSelectAll = () => {
-        if (selectedPlayerIds.length === players.length) {
+        if (selectedPlayerIds.length === attendedPlayers.length) {
             setSelectedPlayerIds([]);
         } else {
-            setSelectedPlayerIds(players.map(p => p.id));
+            setSelectedPlayerIds(attendedPlayers.map(p => p.id));
         }
     };
 
     const handleGenerateTeams = () => {
-        const selectedPlayers = players.filter(p => selectedPlayerIds.includes(p.id));
-        // Validation: Need at least 2 players?
+        const selectedPlayers = attendedPlayers.filter(p => selectedPlayerIds.includes(p.id));
         if (selectedPlayers.length < 2) {
             alert("Selecione pelo menos 2 jogadores.");
             return;
@@ -88,48 +108,63 @@ export const Teams = () => {
                                 <Users size={20} className="text-primary" />
                                 Selecione os Jogadores
                             </h2>
-                            <div className="text-sm text-gray-400">
-                                {selectedPlayerIds.length} selecionados
+                            <div className="flex items-center gap-3">
+                                <span className="text-sm text-gray-400">
+                                    {confirmedIds.length} confirmados · {selectedPlayerIds.length} selecionados
+                                </span>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                            {players.map(player => (
-                                <div
-                                    key={player.id}
-                                    onClick={() => handleTogglePlayer(player.id)}
-                                    className={cn(
-                                        "cursor-pointer p-3 rounded-lg border transition-all duration-200 flex items-center justify-between",
-                                        selectedPlayerIds.includes(player.id)
-                                            ? "bg-primary/10 border-primary text-white"
-                                            : "bg-surface border-white/5 text-gray-400 hover:border-white/20"
-                                    )}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn(
-                                            "w-2 h-2 rounded-full",
-                                            player.position === 'Goalkeeper' ? "bg-yellow-500" : "bg-blue-400"
-                                        )} />
-                                        <span className="font-medium">{player.name}</span>
-                                    </div>
-                                    <div className="text-xs font-mono bg-black/20 px-1.5 py-0.5 rounded">
-                                        Lvl {player.level}
-                                    </div>
+                        {/* Empty state OR player list */}
+                        {attendanceLoaded && attendedPlayers.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12 text-gray-500 gap-3">
+                                <p className="text-sm">Nenhum jogador confirmado para hoje.</p>
+                                <a href="/attendance" className="text-primary text-sm hover:underline">
+                                    → Fazer a chamada primeiro
+                                </a>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                    {attendedPlayers.map(player => (
+                                        <div
+                                            key={player.id}
+                                            onClick={() => handleTogglePlayer(player.id)}
+                                            className={cn(
+                                                "cursor-pointer p-3 rounded-lg border transition-all duration-200 flex items-center justify-between",
+                                                selectedPlayerIds.includes(player.id)
+                                                    ? "bg-primary/10 border-primary text-white"
+                                                    : "bg-surface border-white/5 text-gray-400 hover:border-white/20"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={cn(
+                                                    "w-2 h-2 rounded-full",
+                                                    player.position === 'Goalkeeper' ? "bg-yellow-500" : "bg-blue-400"
+                                                )} />
+                                                <span className="font-medium">{player.name}</span>
+                                            </div>
+                                            <div className="text-xs font-mono bg-black/20 px-1.5 py-0.5 rounded">
+                                                Lvl {player.level}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
 
-                        <div className="mt-6 flex gap-3">
-                            <Button variant="ghost" onClick={handleSelectAll}>
-                                {selectedPlayerIds.length === players.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
-                            </Button>
-                            <Button onClick={handleGenerateTeams} disabled={selectedPlayerIds.length < 2} className="flex-1">
-                                <Trophy size={18} className="mr-2" />
-                                Gerar Times
-                            </Button>
-                        </div>
+                                <div className="mt-6 flex gap-3">
+                                    <Button variant="ghost" onClick={handleSelectAll}>
+                                        {selectedPlayerIds.length === attendedPlayers.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
+                                    </Button>
+                                    <Button onClick={handleGenerateTeams} disabled={selectedPlayerIds.length < 2} className="flex-1">
+                                        <Trophy size={18} className="mr-2" />
+                                        Gerar Times
+                                    </Button>
+                                </div>
+                            </>
+                        )}
                     </Card>
                 </div>
+
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-bottom-4 duration-500">
                     <TeamCard

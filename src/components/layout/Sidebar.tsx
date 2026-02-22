@@ -6,6 +6,7 @@ import {
     Trophy,
     Shield,
     Calendar,
+    ClipboardList,
     Settings,
     Menu,
     X,
@@ -24,6 +25,7 @@ export const Sidebar = () => {
     const navItems = [
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
         { name: 'Jogadores', path: '/players', icon: Users },
+        { name: 'Chamada', path: '/attendance', icon: ClipboardList },
         { name: 'Sorteio', path: '/teams', icon: Shield },
         { name: 'Partidas', path: '/matches', icon: Calendar },
         { name: 'Classificação', path: '/leaderboard', icon: Trophy },

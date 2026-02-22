@@ -9,7 +9,8 @@ import { ArrowLeft, Save, Trash2, Shield, User, Target, Footprints, Activity, Za
 import { cn } from '../utils/cn';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-    ResponsiveContainer, Legend, PieChart, Pie, Cell
+    ResponsiveContainer, Legend, PieChart, Pie, Cell,
+    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -219,23 +220,83 @@ export const PlayerEdit = () => {
                 </Card>
 
                 <Card className="col-span-1 lg:col-span-2 space-y-6">
-                    <h2 className="text-xl font-bold text-white mb-4">Atributos (Radar)</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {Object.entries(formData.attributes).map(([key, value]) => (
-                            <div key={key} className="space-y-2">
-                                <div className="flex justify-between">
-                                    <label className="text-sm font-medium text-gray-300 capitalize">
-                                        {key === 'attack' ? 'Ataque' : key === 'defense' ? 'Defesa' : key === 'pace' ? 'Velocidade' : key === 'shooting' ? 'Chute' : key === 'physical' ? 'Físico' : 'Passe'}
-                                    </label>
-                                    <span className="text-gray-400 font-mono">{value}</span>
-                                </div>
-                                <input type="range" min="0" max="100" value={value}
-                                    onChange={(e) => handleAttributeChange(key as keyof typeof formData.attributes, parseInt(e.target.value))}
-                                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500" />
+                    <h2 className="text-xl font-bold text-white mb-4">Atributos</h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                        {/* Left: sliders */}
+                        <div className="space-y-4">
+                            {Object.entries(formData.attributes).map(([key, value]) => {
+                                const label = key === 'attack' ? 'Ataque' : key === 'defense' ? 'Defesa'
+                                    : key === 'pace' ? 'Velocidade' : key === 'shooting' ? 'Chute'
+                                        : key === 'physical' ? 'Físico' : 'Passe';
+                                return (
+                                    <div key={key} className="space-y-1.5">
+                                        <div className="flex justify-between text-sm">
+                                            <label className="font-medium text-gray-300">{label}</label>
+                                            <span className={cn(
+                                                'font-mono font-bold',
+                                                value >= 80 ? 'text-green-400' : value >= 60 ? 'text-yellow-400' : 'text-gray-400'
+                                            )}>{value}</span>
+                                        </div>
+                                        <div className="relative">
+                                            <input type="range" min="0" max="100" value={value}
+                                                onChange={(e) => handleAttributeChange(
+                                                    key as keyof typeof formData.attributes,
+                                                    parseInt(e.target.value)
+                                                )}
+                                                className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500" />
+                                            <div
+                                                className="absolute top-0 left-0 h-2 rounded-lg bg-blue-500/30 pointer-events-none"
+                                                style={{ width: `${value}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Right: live radar */}
+                        <div className="flex flex-col items-center">
+                            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Radar (ao vivo)</p>
+                            <div className="w-full" style={{ height: 260 }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RadarChart
+                                        data={[
+                                            { subject: 'Ataque', value: formData.attributes.attack },
+                                            { subject: 'Defesa', value: formData.attributes.defense },
+                                            { subject: 'Velocidade', value: formData.attributes.pace },
+                                            { subject: 'Chute', value: formData.attributes.shooting },
+                                            { subject: 'Físico', value: formData.attributes.physical },
+                                            { subject: 'Passe', value: formData.attributes.passing },
+                                        ]}
+                                        cx="50%" cy="50%" outerRadius="75%"
+                                    >
+                                        <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                                        <PolarAngleAxis
+                                            dataKey="subject"
+                                            tick={{ fill: '#9ca3af', fontSize: 11 }}
+                                        />
+                                        <PolarRadiusAxis
+                                            domain={[0, 100]}
+                                            tick={false}
+                                            axisLine={false}
+                                        />
+                                        <Radar
+                                            name="Atributos"
+                                            dataKey="value"
+                                            stroke="#3b82f6"
+                                            fill="#3b82f6"
+                                            fillOpacity={0.25}
+                                            strokeWidth={2}
+                                            dot={{ r: 3, fill: '#3b82f6' }}
+                                        />
+                                    </RadarChart>
+                                </ResponsiveContainer>
                             </div>
-                        ))}
+                        </div>
                     </div>
-                    <div className="pt-6 border-t border-white/10 flex justify-end">
+
+                    <div className="pt-4 border-t border-white/10 flex justify-end">
                         <Button type="submit" className="w-full md:w-auto min-w-[200px]">
                             <Save size={20} className="mr-2" />Salvar Alterações
                         </Button>
