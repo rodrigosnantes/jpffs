@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Plus, Trash2, Edit2, Shield, User } from 'lucide-react';
+import { Plus, Trash2, Edit2, Shield, User, Lock } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import type { Player, Position } from '../types';
@@ -11,6 +12,7 @@ import type { Player, Position } from '../types';
 export const Players = () => {
     const navigate = useNavigate();
     const { players, addPlayer, deletePlayer } = useStore();
+    const { isAdmin } = useAuthStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newPlayer, setNewPlayer] = useState<Partial<Player>>({
         name: '',
@@ -41,10 +43,16 @@ export const Players = () => {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold font-header text-primary">Jogadores</h1>
-                <Button onClick={() => setIsModalOpen(true)}>
-                    <Plus size={20} />
-                    Novo Jogador
-                </Button>
+                {isAdmin ? (
+                    <Button onClick={() => setIsModalOpen(true)}>
+                        <Plus size={20} />
+                        Novo Jogador
+                    </Button>
+                ) : (
+                    <span className="flex items-center gap-1.5 text-xs text-gray-500 border border-white/10 px-3 py-1.5 rounded-lg">
+                        <Lock size={12} /> Somente leitura
+                    </span>
+                )}
             </div>
 
             <Card className="overflow-hidden p-0">
@@ -56,7 +64,7 @@ export const Players = () => {
                                 <th className="p-4 font-medium">Posição</th>
                                 <th className="p-4 font-medium text-center">Nível</th>
                                 <th className="p-4 font-medium text-center">Partidas</th>
-                                <th className="p-4 font-medium text-right">Ações</th>
+                                {isAdmin && <th className="p-4 font-medium text-right">Ações</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -91,24 +99,26 @@ export const Players = () => {
                                         {player.stats.matches_played}
                                     </td>
                                     <td className="p-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => navigate(`/players/${player.id}`)}
-                                                className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors"
-                                            >
-                                                <Edit2 size={18} />
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    if (confirm('Tem certeza que deseja excluir este jogador?')) {
-                                                        deletePlayer(player.id);
-                                                    }
-                                                }}
-                                                className="p-2 hover:bg-secondary/10 rounded text-secondary hover:text-red-400 transition-colors"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </div>
+                                        {isAdmin ? (
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={() => navigate(`/players/${player.id}`)}
+                                                    className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors"
+                                                >
+                                                    <Edit2 size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (confirm('Tem certeza que deseja excluir este jogador?')) {
+                                                            deletePlayer(player.id);
+                                                        }
+                                                    }}
+                                                    className="p-2 hover:bg-secondary/10 rounded text-secondary hover:text-red-400 transition-colors"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        ) : null}
                                     </td>
                                 </tr>
                             ))}

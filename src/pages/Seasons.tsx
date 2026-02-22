@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../store/useAuthStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { CalendarRange, Plus, CheckCircle, XCircle, Clock, Trophy } from 'lucide-react';
@@ -25,6 +26,7 @@ export const Seasons = () => {
     const [creating, setCreating] = useState(false);
     const [form, setForm] = useState({ name: '', start_date: new Date().toISOString().split('T')[0] });
     const [showForm, setShowForm] = useState(false);
+    const { isAdmin } = useAuthStore();
 
     // ── Load seasons ──────────────────────────────────────────────────────
     const load = useCallback(async () => {
@@ -98,10 +100,12 @@ export const Seasons = () => {
                         </p>
                     )}
                 </div>
-                <Button onClick={() => setShowForm(v => !v)}>
-                    <Plus size={18} className="mr-2" />
-                    Nova Temporada
-                </Button>
+                {isAdmin && (
+                    <Button onClick={() => setShowForm(v => !v)}>
+                        <Plus size={18} className="mr-2" />
+                        Nova Temporada
+                    </Button>
+                )}
             </div>
 
             {/* Create form */}
@@ -165,12 +169,12 @@ export const Seasons = () => {
                                 <div className={cn(
                                     'w-10 h-10 rounded-full flex items-center justify-center shrink-0',
                                     season.is_active ? 'bg-green-500/20 text-green-400' :
-                                    season.end_date ? 'bg-gray-500/20 text-gray-500' :
-                                    'bg-white/5 text-gray-400'
+                                        season.end_date ? 'bg-gray-500/20 text-gray-500' :
+                                            'bg-white/5 text-gray-400'
                                 )}>
                                     {season.is_active ? <CheckCircle size={20} /> :
-                                     season.end_date ? <XCircle size={20} /> :
-                                     <Clock size={20} />}
+                                        season.end_date ? <XCircle size={20} /> :
+                                            <Clock size={20} />}
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
@@ -201,29 +205,31 @@ export const Seasons = () => {
                                 </div>
                             </div>
 
-                            {/* Actions */}
-                            <div className="flex gap-2 shrink-0">
-                                {!season.is_active && !season.end_date && (
-                                    <Button
-                                        variant="ghost"
-                                        onClick={() => handleActivate(season.id)}
-                                        className="text-green-400 hover:bg-green-500/10 text-xs"
-                                    >
-                                        <Trophy size={14} className="mr-1" />
-                                        Ativar
-                                    </Button>
-                                )}
-                                {season.is_active && (
-                                    <Button
-                                        variant="ghost"
-                                        onClick={() => handleClose(season.id)}
-                                        className="text-red-400 hover:bg-red-500/10 text-xs"
-                                    >
-                                        <XCircle size={14} className="mr-1" />
-                                        Encerrar
-                                    </Button>
-                                )}
-                            </div>
+                            {/* Actions — admin only */}
+                            {isAdmin && (
+                                <div className="flex gap-2 shrink-0">
+                                    {!season.is_active && !season.end_date && (
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => handleActivate(season.id)}
+                                            className="text-green-400 hover:bg-green-500/10 text-xs"
+                                        >
+                                            <Trophy size={14} className="mr-1" />
+                                            Ativar
+                                        </Button>
+                                    )}
+                                    {season.is_active && (
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => handleClose(season.id)}
+                                            className="text-red-400 hover:bg-red-500/10 text-xs"
+                                        >
+                                            <XCircle size={14} className="mr-1" />
+                                            Encerrar
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
                         </Card>
                     ))}
                 </div>

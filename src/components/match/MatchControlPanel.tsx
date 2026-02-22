@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { Play, Square, Goal, ShieldAlert, Flag, ShieldBan, Star, RefreshCw } from 'lucide-react';
+import { Play, Square, Goal, ShieldAlert, Flag, ShieldBan, Star, RefreshCw, Lock } from 'lucide-react';
 import { EventModal } from './EventModal';
 import type { EventType } from '../../types';
 import { cn } from '../../utils/cn';
 
 export const MatchControlPanel = () => {
     const { currentMatch, generatedTeams, players, lastMVP, startMatch, pauseMatch, resumeMatch, endMatch, addEvent, resetMatch, clearMVP } = useStore();
+    const { isAdmin } = useAuthStore();
     const [modalOpen, setModalOpen] = useState(false);
     const [activeTeam, setActiveTeam] = useState<'A' | 'B' | null>(null);
     const [eventType, setEventType] = useState<EventType | null>(null);
@@ -104,8 +106,8 @@ export const MatchControlPanel = () => {
                         <div>
                             <h2 className="text-2xl font-black text-white">{lastMVP.name}</h2>
                             <span className={`text-xs font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${lastMVP.team === 'A'
-                                    ? 'bg-yellow-500/10 text-yellow-400'
-                                    : 'bg-blue-500/10 text-blue-400'
+                                ? 'bg-yellow-500/10 text-yellow-400'
+                                : 'bg-blue-500/10 text-blue-400'
                                 }`}>
                                 Time {lastMVP.team === 'A' ? 'Amarelo' : 'Azul'}
                             </span>
@@ -135,27 +137,32 @@ export const MatchControlPanel = () => {
             )}
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold font-header text-primary">Painel da Partida</h2>
-                <div className="flex gap-3">
-                    {!currentMatch.isActive && currentMatch.totalElapsedTime === 0 ? (
-                        <Button onClick={startMatch} className="bg-green-600 hover:bg-green-700 text-white">
-                            <Play size={20} className="mr-2" /> Iniciar Partida
-                        </Button>
-                    ) : (
-                        <>
-                            {currentMatch.isActive ? (
-                                <Button onClick={pauseMatch} className="bg-yellow-600 hover:bg-yellow-700 text-white">
-                                    <Square size={20} className="mr-2 fill-current" /> Pausar
-                                </Button>
-                            ) : (
-                                <Button onClick={resumeMatch} className="bg-green-600 hover:bg-green-700 text-white">
-                                    <Play size={20} className="mr-2" /> Retomar
-                                </Button>
-                            )}
-
-                            <Button onClick={endMatch} variant="danger">
-                                <Flag size={20} className="mr-2" /> Encerrar
+                <div className="flex gap-3 items-center">
+                    {isAdmin ? (
+                        !currentMatch.isActive && currentMatch.totalElapsedTime === 0 ? (
+                            <Button onClick={startMatch} className="bg-green-600 hover:bg-green-700 text-white">
+                                <Play size={20} className="mr-2" /> Iniciar Partida
                             </Button>
-                        </>
+                        ) : (
+                            <>
+                                {currentMatch.isActive ? (
+                                    <Button onClick={pauseMatch} className="bg-yellow-600 hover:bg-yellow-700 text-white">
+                                        <Square size={20} className="mr-2 fill-current" /> Pausar
+                                    </Button>
+                                ) : (
+                                    <Button onClick={resumeMatch} className="bg-green-600 hover:bg-green-700 text-white">
+                                        <Play size={20} className="mr-2" /> Retomar
+                                    </Button>
+                                )}
+                                <Button onClick={endMatch} variant="danger">
+                                    <Flag size={20} className="mr-2" /> Encerrar
+                                </Button>
+                            </>
+                        )
+                    ) : (
+                        <span className="flex items-center gap-1.5 text-xs text-gray-500 border border-white/10 px-3 py-1.5 rounded-lg">
+                            <Lock size={12} /> Somente Admin
+                        </span>
                     )}
                 </div>
             </div>

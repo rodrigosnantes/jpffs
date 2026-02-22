@@ -12,17 +12,20 @@ import {
     Menu,
     X,
     LogOut,
-    Palette
+    Palette,
+    ShieldCheck
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export const Sidebar = () => {
     const [isOpen, setIsOpen] = useState(true);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const { themeId, setTheme, themes } = useTheme();
     const [showThemes, setShowThemes] = useState(false);
+    const { isAdmin } = useAuthStore();
 
     const navItems = [
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -33,6 +36,7 @@ export const Sidebar = () => {
         { name: 'Temporadas', path: '/seasons', icon: CalendarRange },
         { name: 'Classificação', path: '/leaderboard', icon: Trophy },
         { name: 'Configurações', path: '/settings', icon: Settings },
+        ...(isAdmin ? [{ name: 'Painel Admin', path: '/admin', icon: ShieldCheck }] : []),
     ];
 
     const handleLogout = async () => {
@@ -169,8 +173,15 @@ export const Sidebar = () => {
                             "transition-all duration-300 overflow-hidden",
                             !isOpen ? "w-0 opacity-0" : "w-auto opacity-100"
                         )}>
-                            <p className="text-sm font-bold text-white truncate">Rodrigo</p>
-                            <p className="text-[10px] text-primary truncate">Admin</p>
+                            <div className="flex items-center gap-1.5">
+                                <p className="text-sm font-bold text-white truncate">Rodrigo</p>
+                                {isAdmin && (
+                                    <span className="text-[9px] font-black uppercase tracking-wider bg-primary/20 text-primary border border-primary/30 px-1.5 py-0.5 rounded-full">
+                                        Admin
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-[10px] text-primary truncate">{isAdmin ? 'Administrador' : 'Membro'}</p>
                         </div>
                     </NavLink>
 

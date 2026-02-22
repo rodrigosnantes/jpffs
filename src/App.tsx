@@ -15,6 +15,7 @@ import { MatchDetail } from './pages/MatchDetail';
 import { Attendance } from './pages/Attendance';
 import { PlayerProfile } from './pages/PlayerProfile';
 import { Seasons } from './pages/Seasons';
+import { AdminPanel } from './pages/AdminPanel';
 import { ToastProvider } from './contexts/ToastContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastContainer } from './components/ui/ToastContainer';
@@ -49,6 +50,7 @@ const AppInner = () => {
           <Route path="/teams" element={<Teams />} />
           <Route path="/attendance" element={<Attendance />} />
           <Route path="/seasons" element={<Seasons />} />
+          <Route path="/admin" element={<AdminPanel />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/matches" element={<Matches />} />
           <Route path="/matches/:id" element={<MatchDetail />} />

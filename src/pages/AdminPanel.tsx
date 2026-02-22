@@ -1,0 +1,352 @@
+import { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../store/useAuthStore';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Shield, UserPlus, Users, Mail, Lock, CheckCircle, AlertCircle, Trash2, Crown } from 'lucide-react';
+import { cn } from '../utils/cn';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface AdminUser {
+    id: string;
+    email: string;
+    name: string | null;
+    role: string;
+    created_at: string;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export const AdminPanel = () => {
+    const { isAdmin, user } = useAuthStore();
+
+    // Guard: redirect non-admins
+    if (!isAdmin) return <Navigate to="/" replace />;
+
+    const [users, setUsers] = useState<AdminUser[]>([]);
+    const [loadingUsers, setLoadingUsers] = useState(true);
+
+    const [form, setForm] = useState({
+        email: '',
+        password: '',
+        name: '',
+        role: 'member' as 'admin' | 'member',
+    });
+    const [submitting, setSubmitting] = useState(false);
+    const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+    // ── Load existing users from profiles ─────────────────────────────────
+    const loadUsers = async () => {
+        setLoadingUsers(true);
+        const { data } = await supabase
+            .from('profiles')
+            .select('id, email, name, role, created_at')
+            .order('created_at', { ascending: false });
+        setUsers((data ?? []) as AdminUser[]);
+        setLoadingUsers(false);
+    };
+
+    useEffect(() => { loadUsers(); }, []);
+
+    // ── Create user ───────────────────────────────────────────────────────
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!form.email || !form.password) return;
+        setSubmitting(true);
+        setFeedback(null);
+
+        try {
+            // Save current admin session before signUp potentially replaces it
+            const { data: { session: adminSession } } = await supabase.auth.getSession();
+
+            // Create the new user via signUp
+            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                email: form.email,
+                password: form.password,
+                options: {
+                    data: { name: form.name || form.email.split('@')[0] },
+                },
+            });
+
+            if (signUpError) {
+                setFeedback({ type: 'error', msg: signUpError.message });
+                setSubmitting(false);
+                return;
+            }
+
+            const newUserId = signUpData.user?.id;
+
+            // Restore admin session if it changed (email confirmation disabled case)
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession?.user?.id !== adminSession?.user?.id && adminSession?.access_token) {
+                await supabase.auth.setSession({
+                    access_token: adminSession.access_token,
+                    refresh_token: adminSession.refresh_token!,
+                });
+            }
+
+            // Set role in profiles (upsert in case trigger already created the row)
+            if (newUserId) {
+                await supabase.from('profiles').upsert({
+                    id: newUserId,
+                    email: form.email,
+                    name: form.name || form.email.split('@')[0],
+                    role: form.role,
+                });
+            }
+
+            setFeedback({
+                type: 'success',
+                msg: `Usuário "${form.email}" criado como ${form.role === 'admin' ? 'Administrador' : 'Membro'}!`,
+            });
+            setForm({ email: '', password: '', name: '', role: 'member' });
+            loadUsers();
+
+        } catch (err: any) {
+            setFeedback({ type: 'error', msg: err.message ?? 'Erro inesperado.' });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    // ── Change role ───────────────────────────────────────────────────────
+    const handleChangeRole = async (userId: string, newRole: 'admin' | 'member') => {
+        if (userId === user?.id) {
+            alert('Você não pode alterar sua própria role.');
+            return;
+        }
+        await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+        loadUsers();
+    };
+
+    // ── Delete user (profile only) ────────────────────────────────────────
+    const handleDelete = async (userId: string, email: string) => {
+        if (userId === user?.id) { alert('Você não pode excluir sua própria conta.'); return; }
+        if (!confirm(`Excluir o usuário "${email}"? Esta ação remove apenas o perfil — para remover o acesso ao auth, faça pelo Supabase Dashboard.`)) return;
+        await supabase.from('profiles').delete().eq('id', userId);
+        loadUsers();
+    };
+
+    return (
+        <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Header */}
+            <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                    <Shield size={20} className="text-primary" />
+                </div>
+                <div>
+                    <h1 className="text-3xl font-bold font-header text-primary">Painel Admin</h1>
+                    <p className="text-sm text-gray-500">Gerenciar usuários e permissões</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                {/* ── Create User Form ──────────────────────────────────── */}
+                <Card className="lg:col-span-2 h-fit space-y-5">
+                    <div className="flex items-center gap-2">
+                        <UserPlus size={18} className="text-primary" />
+                        <h2 className="font-bold text-white text-base">Criar Novo Usuário</h2>
+                    </div>
+
+                    <form onSubmit={handleCreate} className="space-y-4">
+                        {/* Name */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs text-gray-500 uppercase tracking-wider">Nome</label>
+                            <input
+                                type="text"
+                                value={form.name}
+                                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                                placeholder="Nome do usuário"
+                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/50"
+                            />
+                        </div>
+
+                        {/* Email */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                                <Mail size={11} /> E-mail *
+                            </label>
+                            <input
+                                type="email"
+                                required
+                                value={form.email}
+                                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                                placeholder="usuario@email.com"
+                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/50"
+                            />
+                        </div>
+
+                        {/* Password */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                                <Lock size={11} /> Senha *
+                            </label>
+                            <input
+                                type="password"
+                                required
+                                value={form.password}
+                                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                                placeholder="Mínimo 6 caracteres"
+                                minLength={6}
+                                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/50"
+                            />
+                        </div>
+
+                        {/* Role */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs text-gray-500 uppercase tracking-wider">Perfil</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setForm(f => ({ ...f, role: 'member' }))}
+                                    className={cn(
+                                        'p-3 rounded-xl border flex flex-col items-center gap-1.5 text-xs font-bold transition-all',
+                                        form.role === 'member'
+                                            ? 'bg-blue-500/15 border-blue-500/40 text-blue-400'
+                                            : 'bg-white/3 border-white/10 text-gray-500 hover:border-white/20'
+                                    )}
+                                >
+                                    <Users size={18} />
+                                    Membro
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setForm(f => ({ ...f, role: 'admin' }))}
+                                    className={cn(
+                                        'p-3 rounded-xl border flex flex-col items-center gap-1.5 text-xs font-bold transition-all',
+                                        form.role === 'admin'
+                                            ? 'bg-primary/15 border-primary/40 text-primary'
+                                            : 'bg-white/3 border-white/10 text-gray-500 hover:border-white/20'
+                                    )}
+                                >
+                                    <Crown size={18} />
+                                    Admin
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Feedback */}
+                        {feedback && (
+                            <div className={cn(
+                                'flex items-start gap-2 p-3 rounded-lg text-sm',
+                                feedback.type === 'success'
+                                    ? 'bg-green-500/10 border border-green-500/20 text-green-400'
+                                    : 'bg-red-500/10 border border-red-500/20 text-red-400'
+                            )}>
+                                {feedback.type === 'success'
+                                    ? <CheckCircle size={15} className="shrink-0 mt-0.5" />
+                                    : <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                                }
+                                {feedback.msg}
+                            </div>
+                        )}
+
+                        <Button type="submit" disabled={submitting} className="w-full">
+                            <UserPlus size={16} className="mr-2" />
+                            {submitting ? 'Criando...' : 'Criar Usuário'}
+                        </Button>
+                    </form>
+                </Card>
+
+                {/* ── Users List ─────────────────────────────────────────── */}
+                <Card className="lg:col-span-3">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <Users size={18} className="text-gray-400" />
+                            <h2 className="font-bold text-white text-base">Usuários Cadastrados</h2>
+                        </div>
+                        <span className="text-xs text-gray-600 bg-white/5 px-2 py-1 rounded-full">
+                            {users.length} total
+                        </span>
+                    </div>
+
+                    {loadingUsers ? (
+                        <div className="space-y-2">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="h-14 bg-white/3 rounded-lg animate-pulse" />
+                            ))}
+                        </div>
+                    ) : users.length === 0 ? (
+                        <div className="py-10 text-center text-gray-600 text-sm">
+                            Nenhum usuário encontrado.
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {users.map(u => (
+                                <div
+                                    key={u.id}
+                                    className={cn(
+                                        'flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all',
+                                        u.id === user?.id
+                                            ? 'border-primary/20 bg-primary/5'
+                                            : 'border-white/5 bg-white/2 hover:bg-white/5'
+                                    )}
+                                >
+                                    {/* Avatar */}
+                                    <div className={cn(
+                                        'w-9 h-9 rounded-full flex items-center justify-center text-xs font-black shrink-0',
+                                        u.role === 'admin'
+                                            ? 'bg-primary/20 text-primary border border-primary/30'
+                                            : 'bg-white/10 text-gray-400 border border-white/10'
+                                    )}>
+                                        {(u.name ?? u.email).substring(0, 2).toUpperCase()}
+                                    </div>
+
+                                    {/* Info */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5">
+                                            <p className="text-sm font-semibold text-white truncate">
+                                                {u.name ?? u.email.split('@')[0]}
+                                            </p>
+                                            {u.id === user?.id && (
+                                                <span className="text-[9px] text-gray-500 bg-white/5 px-1.5 rounded-full">você</span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-600 truncate">{u.email}</p>
+                                    </div>
+
+                                    {/* Role badge + toggle */}
+                                    {u.id !== user?.id && (
+                                        <button
+                                            onClick={() => handleChangeRole(u.id, u.role === 'admin' ? 'member' : 'admin')}
+                                            title="Clique para alternar role"
+                                            className={cn(
+                                                'text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full border transition-all hover:opacity-80',
+                                                u.role === 'admin'
+                                                    ? 'bg-primary/20 text-primary border-primary/30'
+                                                    : 'bg-white/5 text-gray-500 border-white/10'
+                                            )}
+                                        >
+                                            {u.role === 'admin' ? '★ Admin' : 'Membro'}
+                                        </button>
+                                    )}
+                                    {u.id === user?.id && (
+                                        <span className={cn(
+                                            'text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full border',
+                                            'bg-primary/20 text-primary border-primary/30'
+                                        )}>
+                                            ★ Admin
+                                        </span>
+                                    )}
+
+                                    {/* Delete */}
+                                    {u.id !== user?.id && (
+                                        <button
+                                            onClick={() => handleDelete(u.id, u.email)}
+                                            className="p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                                            title="Remover perfil"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </Card>
+            </div>
+        </div>
+    );
+};
