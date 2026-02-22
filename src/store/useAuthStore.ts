@@ -36,16 +36,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     initialize: async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user ?? null;
-        set({ user, isLoading: false });
-        if (user) await get().fetchRole(user.id);
+        // Use ONLY onAuthStateChange as source of truth.
+        // Supabase fires INITIAL_SESSION immediately on subscribe,
+        // so there's no need to call getSession() separately.
+        let lastUserId: string | null = null;
 
         supabase.auth.onAuthStateChange(async (_event, session) => {
             const u = session?.user ?? null;
             set({ user: u, isLoading: false });
-            if (u) await get().fetchRole(u.id);
-            else set({ role: null, isAdmin: false });
+
+            if (u) {
+                // Guard: skip fetchRole if it's the same user (avoids double-call on token refresh)
+                if (u.id !== lastUserId) {
+                    lastUserId = u.id;
+                    await get().fetchRole(u.id);
+                }
+            } else {
+                lastUserId = null;
+                set({ role: null, isAdmin: false });
+            }
         });
     },
 

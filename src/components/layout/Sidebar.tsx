@@ -30,13 +30,16 @@ export const Sidebar = () => {
     const navItems = [
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
         { name: 'Jogadores', path: '/players', icon: Users },
-        { name: 'Chamada', path: '/attendance', icon: ClipboardList },
-        { name: 'Sorteio', path: '/teams', icon: Shield },
         { name: 'Partidas', path: '/matches', icon: Calendar },
-        { name: 'Temporadas', path: '/seasons', icon: CalendarRange },
         { name: 'Classificação', path: '/leaderboard', icon: Trophy },
-        { name: 'Configurações', path: '/settings', icon: Settings },
-        ...(isAdmin ? [{ name: 'Painel Admin', path: '/admin', icon: ShieldCheck }] : []),
+        // ── Admin-only items ─────────────────────────────────────────────
+        ...(isAdmin ? [
+            { name: 'Chamada', path: '/attendance', icon: ClipboardList },
+            { name: 'Sorteio', path: '/teams', icon: Shield },
+            { name: 'Temporadas', path: '/seasons', icon: CalendarRange },
+            { name: 'Configurações', path: '/settings', icon: Settings },
+            { name: 'Painel Admin', path: '/admin', icon: ShieldCheck },
+        ] : []),
     ];
 
     const handleLogout = async () => {

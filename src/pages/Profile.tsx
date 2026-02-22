@@ -61,7 +61,7 @@ export const Profile = () => {
         setLoading(false);
     };
 
-    useEffect(() => { loadPlayer(); }, [user]);
+    useEffect(() => { loadPlayer(); }, [user?.id]);
 
     // ── Save profile changes ──────────────────────────────────────────────
     const handleSave = async (e: React.FormEvent) => {

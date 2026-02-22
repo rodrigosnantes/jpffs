@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Users, Trophy, Play, ArrowRight, Activity, Calendar } from 'lucide-react';
@@ -7,6 +8,7 @@ import { cn } from '../utils/cn';
 
 export const Dashboard = () => {
     const { players, matches, currentMatch } = useStore();
+    const { isAdmin } = useAuthStore();
 
     const lastMatch = matches.length > 0 ? matches[0] : null;
 
@@ -22,14 +24,22 @@ export const Dashboard = () => {
                         Gerencie suas peladas, acompanhe estatísticas em tempo real e descubra quem são os verdadeiros craques da galera.
                     </p>
                     <div className="flex flex-wrap gap-4">
-                        <Link to="/teams">
-                            <Button size="lg" className="bg-primary hover:bg-primary/90 text-background font-bold shadow-lg shadow-primary/25">
-                                <Play className="mr-2" size={20} /> Iniciar Nova Partida
-                            </Button>
-                        </Link>
+                        {isAdmin ? (
+                            <Link to="/teams">
+                                <Button size="lg" className="bg-primary hover:bg-primary/90 text-background font-bold shadow-lg shadow-primary/25">
+                                    <Play className="mr-2" size={20} /> Iniciar Nova Partida
+                                </Button>
+                            </Link>
+                        ) : (
+                            <Link to="/leaderboard">
+                                <Button size="lg" className="bg-primary hover:bg-primary/90 text-background font-bold shadow-lg shadow-primary/25">
+                                    <Trophy className="mr-2" size={20} /> Ver Classificação
+                                </Button>
+                            </Link>
+                        )}
                         <Link to="/players">
                             <Button size="lg" variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/10">
-                                <Users className="mr-2" size={20} /> Gerenciar Jogadores
+                                <Users className="mr-2" size={20} /> {isAdmin ? 'Gerenciar Jogadores' : 'Ver Jogadores'}
                             </Button>
                         </Link>
                     </div>

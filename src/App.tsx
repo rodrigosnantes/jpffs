@@ -25,7 +25,7 @@ import { useStore } from './store/useStore';
 
 // Inner component so hooks can access ToastContext
 const AppInner = () => {
-  const { initialize } = useAuthStore();
+  const { initialize, isAdmin } = useAuthStore();
   const { fetchPlayers, fetchMatches } = useStore();
 
   useEffect(() => {
@@ -47,9 +47,9 @@ const AppInner = () => {
           <Route path="/players" element={<Players />} />
           <Route path="/players/:id" element={<PlayerEdit />} />
           <Route path="/jogadores/:id" element={<PlayerProfile />} />
-          <Route path="/teams" element={<Teams />} />
-          <Route path="/attendance" element={<Attendance />} />
-          <Route path="/seasons" element={<Seasons />} />
+          <Route path="/teams" element={isAdmin ? <Teams /> : <Navigate to="/" replace />} />
+          <Route path="/attendance" element={isAdmin ? <Attendance /> : <Navigate to="/" replace />} />
+          <Route path="/seasons" element={isAdmin ? <Seasons /> : <Navigate to="/" replace />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/matches" element={<Matches />} />
