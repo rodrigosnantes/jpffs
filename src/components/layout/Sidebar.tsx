@@ -181,7 +181,7 @@ export const Sidebar = () => {
                                     </span>
                                 )}
                             </div>
-                            <p className="text-[10px] text-primary truncate">{isAdmin ? 'Administrador' : 'Membro'}</p>
+                            <p className="text-[10px] text-primary truncate">{isAdmin ? 'Administrador' : 'Usuário'}</p>
                         </div>
                     </NavLink>
 

@@ -2,8 +2,8 @@
 -- Run this in Supabase SQL Editor
 
 -- 1. Ensure profiles table has role column (already exists, but just in case)
-alter table profiles add column if not exists role text not null default 'member'
-    check (role in ('admin', 'member'));
+alter table profiles add column if not exists role text not null default 'user'
+    check (role in ('admin', 'user'));
 
 -- 2. Set your own account as admin (replace with your actual user ID from auth.users)
 -- You can find your user ID in: Supabase Dashboard → Auth → Users

@@ -4,7 +4,7 @@ import type { User } from '@supabase/supabase-js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type UserRole = 'admin' | 'member';
+export type UserRole = 'admin' | 'user';
 
 interface AuthState {
     user: User | null;
@@ -31,7 +31,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             .select('role')
             .eq('id', userId)
             .maybeSingle();
-        const role = (data?.role ?? 'member') as UserRole;
+        const role = (data?.role ?? 'user') as UserRole;
         set({ role, isAdmin: role === 'admin' });
     },
 

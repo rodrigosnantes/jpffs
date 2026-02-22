@@ -32,7 +32,7 @@ export const AdminPanel = () => {
         email: '',
         password: '',
         name: '',
-        role: 'member' as 'admin' | 'member',
+        role: 'user' as 'admin' | 'user',
     });
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -101,7 +101,7 @@ export const AdminPanel = () => {
                 type: 'success',
                 msg: `Usuário "${form.email}" criado como ${form.role === 'admin' ? 'Administrador' : 'Membro'}!`,
             });
-            setForm({ email: '', password: '', name: '', role: 'member' });
+            setForm({ email: '', password: '', name: '', role: 'user' });
             loadUsers();
 
         } catch (err: any) {
@@ -112,7 +112,7 @@ export const AdminPanel = () => {
     };
 
     // ── Change role ───────────────────────────────────────────────────────
-    const handleChangeRole = async (userId: string, newRole: 'admin' | 'member') => {
+    const handleChangeRole = async (userId: string, newRole: 'admin' | 'user') => {
         if (userId === user?.id) {
             alert('Você não pode alterar sua própria role.');
             return;
@@ -200,10 +200,10 @@ export const AdminPanel = () => {
                             <div className="grid grid-cols-2 gap-2">
                                 <button
                                     type="button"
-                                    onClick={() => setForm(f => ({ ...f, role: 'member' }))}
+                                    onClick={() => setForm(f => ({ ...f, role: 'user' }))}
                                     className={cn(
                                         'p-3 rounded-xl border flex flex-col items-center gap-1.5 text-xs font-bold transition-all',
-                                        form.role === 'member'
+                                        form.role === 'user'
                                             ? 'bg-blue-500/15 border-blue-500/40 text-blue-400'
                                             : 'bg-white/3 border-white/10 text-gray-500 hover:border-white/20'
                                     )}
@@ -310,7 +310,7 @@ export const AdminPanel = () => {
                                     {/* Role badge + toggle */}
                                     {u.id !== user?.id && (
                                         <button
-                                            onClick={() => handleChangeRole(u.id, u.role === 'admin' ? 'member' : 'admin')}
+                                            onClick={() => handleChangeRole(u.id, u.role === 'admin' ? 'user' : 'admin')}
                                             title="Clique para alternar role"
                                             className={cn(
                                                 'text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full border transition-all hover:opacity-80',

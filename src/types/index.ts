@@ -1,6 +1,5 @@
 export type Position = 'Goalkeeper' | 'Line';
 
-export type PlayerRole = 'Admin' | 'User';
 
 export interface PlayerStats {
     matches_played: number;
@@ -20,7 +19,6 @@ export interface Player {
     position: Position;
     level: number; // 1 to 5
     stats: PlayerStats;
-    role: PlayerRole;
     attributes?: { // For Radar Chart
         attack: number;
         defense: number;

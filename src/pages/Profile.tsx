@@ -65,21 +65,25 @@ export const Profile = () => {
             const name = profile?.name ?? user.email?.split('@')[0] ?? '';
             setProfileName(name);
 
-            // Try to find linked player from localStorage first (persisted choice)
-            const savedId = localStorage.getItem(LINKED_PLAYER_KEY);
-            if (savedId && players.find(p => p.id === savedId)) {
-                setLinkedPlayerId(savedId);
-                const p = players.find(pl => pl.id === savedId)!;
-                setFormData({ name: p.name, position: p.position });
-            } else {
-                // Auto-match by name (case-insensitive)
-                const match = players.find(
+            // 1st priority: match by user_id (players created via new modal)
+            let match = players.find(p => (p as any).user_id === user.id);
+
+            // 2nd priority: localStorage persisted choice
+            if (!match) {
+                const savedId = localStorage.getItem(LINKED_PLAYER_KEY);
+                if (savedId) match = players.find(p => p.id === savedId);
+            }
+
+            // 3rd priority: auto-match by name (legacy players, no user_id)
+            if (!match) {
+                match = players.find(
                     p => p.name.trim().toLowerCase() === name.trim().toLowerCase()
                 );
-                if (match) {
-                    setLinkedPlayerId(match.id);
-                    setFormData({ name: match.name, position: match.position });
-                }
+            }
+
+            if (match) {
+                setLinkedPlayerId(match.id);
+                setFormData({ name: match.name, position: match.position });
             }
 
             setProfileLoading(false);
