@@ -8,11 +8,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#050608',
-        primary: '#FFD700',
-        secondary: '#FF4B4B',
-        surface: '#121212',
-        text: '#F5F7FA',
+        background: 'var(--color-background)',
+        primary: 'var(--color-primary)',
+        secondary: 'var(--color-secondary)',
+        surface: 'var(--color-surface)',
+        text: 'var(--color-text)',
       },
       fontFamily: {
         header: ['Oswald', 'Montserrat', 'sans-serif'],

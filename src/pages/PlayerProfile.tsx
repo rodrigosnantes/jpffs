@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
+import { PlayerCard } from '../components/player/PlayerCard';
 import { cn } from '../utils/cn';
 import {
     Trophy, Target, Shield, Star, Calendar,
-    TrendingUp, ArrowLeft, Zap, Users
+    TrendingUp, ArrowLeft, Zap, Users, Download, Loader2
 } from 'lucide-react';
 import {
     RadarChart, Radar, PolarGrid, PolarAngleAxis,
@@ -45,6 +46,30 @@ export const PlayerProfile = () => {
 
     const [matchStats, setMatchStats] = useState<MatchStat[]>([]);
     const [loading, setLoading] = useState(true);
+    const [exporting, setExporting] = useState(false);
+    const cardRef = useRef<HTMLDivElement>(null);
+
+    const handleExport = async () => {
+        if (!cardRef.current || exporting) return;
+        setExporting(true);
+        try {
+            const html2canvas = (await import('html2canvas')).default;
+            const canvas = await html2canvas(cardRef.current, {
+                backgroundColor: null,
+                scale: 3,
+                useCORS: true,
+                logging: false,
+            });
+            const link = document.createElement('a');
+            link.download = `${player?.name ?? 'jogador'}-jpffs.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } catch (err) {
+            console.error('Export failed:', err);
+        } finally {
+            setExporting(false);
+        }
+    };
 
     // ── Fetch match history ──────────────────────────────────────────────
     useEffect(() => {
@@ -122,10 +147,27 @@ export const PlayerProfile = () => {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            {/* Back link */}
-            <Link to="/players" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-white transition-colors">
-                <ArrowLeft size={15} /> Todos os jogadores
-            </Link>
+            {/* Back link + Export button */}
+            <div className="flex items-center justify-between">
+                <Link to="/players" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-white transition-colors">
+                    <ArrowLeft size={15} /> Todos os jogadores
+                </Link>
+                <button
+                    onClick={handleExport}
+                    disabled={exporting}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-semibold text-gray-300 hover:text-white transition-all disabled:opacity-50"
+                >
+                    {exporting
+                        ? <><Loader2 size={14} className="animate-spin" /> Gerando...</>
+                        : <><Download size={14} /> Exportar Cartão</>
+                    }
+                </button>
+            </div>
+
+            {/* Hidden player card — captured by html2canvas */}
+            <div style={{ position: 'fixed', top: '-9999px', left: '-9999px', zIndex: -1 }}>
+                <PlayerCard player={player} winRate={winRate} cardRef={cardRef} />
+            </div>
 
             {/* ── Hero Card ──────────────────────────────────────────────── */}
             <Card className="relative overflow-hidden">

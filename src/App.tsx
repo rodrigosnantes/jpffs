@@ -16,6 +16,7 @@ import { Attendance } from './pages/Attendance';
 import { PlayerProfile } from './pages/PlayerProfile';
 import { Seasons } from './pages/Seasons';
 import { ToastProvider } from './contexts/ToastContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { useRealtime } from './hooks/useRealtime';
 import { useAuthStore } from './store/useAuthStore';
@@ -61,8 +62,10 @@ const AppInner = () => {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <AppInner />
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <AppInner />
+      </ToastProvider>
+    </ThemeProvider>
   );
 }

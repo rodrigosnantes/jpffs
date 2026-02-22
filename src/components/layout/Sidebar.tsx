@@ -11,17 +11,18 @@ import {
     Settings,
     Menu,
     X,
-    LogOut
+    LogOut,
+    Palette
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { supabase } from '../../lib/supabase';
-// import { useAuthStore } from '../../store/useAuthStore';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export const Sidebar = () => {
     const [isOpen, setIsOpen] = useState(true);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-    // const user = useAuthStore((state) => state.user);
+    const { themeId, setTheme, themes } = useTheme();
+    const [showThemes, setShowThemes] = useState(false);
 
     const navItems = [
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -109,7 +110,50 @@ export const Sidebar = () => {
                 </nav>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-white/5 space-y-2">
+                <div className="p-4 border-t border-white/5 space-y-1">
+                    {/* Themes */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowThemes(v => !v)}
+                            className={cn(
+                                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group',
+                                !isOpen && 'justify-center',
+                                showThemes ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                            )}
+                        >
+                            <Palette size={20} className="min-w-[20px]" />
+                            <span className={cn('text-sm font-medium whitespace-nowrap overflow-hidden transition-all', !isOpen && 'hidden')}>
+                                Tema
+                            </span>
+                        </button>
+
+                        {showThemes && (
+                            <div className={cn(
+                                'absolute bottom-full mb-2 bg-surface border border-white/10 rounded-xl p-3 shadow-xl z-50',
+                                isOpen ? 'left-0 right-0' : 'left-14 w-48'
+                            )}>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2 font-bold">Escolher tema</p>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {themes.map(t => (
+                                        <button
+                                            key={t.id}
+                                            onClick={() => { setTheme(t.id); setShowThemes(false); }}
+                                            className={cn(
+                                                'flex flex-col items-center gap-1 p-2 rounded-lg border transition-all text-xs',
+                                                themeId === t.id
+                                                    ? 'border-primary bg-primary/10 text-primary'
+                                                    : 'border-white/5 hover:border-white/20 text-gray-400 hover:text-white'
+                                            )}
+                                        >
+                                            <span className="text-lg">{t.emoji}</span>
+                                            <span className="font-medium text-[10px]">{t.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     <NavLink
                         to="/profile"
                         className={({ isActive }) => cn(
@@ -144,3 +188,4 @@ export const Sidebar = () => {
         </>
     );
 };
+

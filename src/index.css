@@ -2,17 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Default theme tokens (Dark) ───────────────────────────────────────────── */
+:root {
+  --color-background: #050608;
+  --color-surface:    #121212;
+  --color-primary:    #FFD700;
+  --color-secondary:  #FF4B4B;
+  --color-text:       #F5F7FA;
+  --color-muted:      #6b7280;
+}
+
 @layer base {
   body {
     @apply bg-background text-text font-body;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
+  h1, h2, h3, h4, h5, h6 {
     @apply font-header;
+  }
+
+  /* Smooth theme transitions on all elements */
+  *, *::before, *::after {
+    transition-property: background-color, border-color, color, box-shadow;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
   }
 }
