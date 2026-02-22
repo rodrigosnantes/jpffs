@@ -7,6 +7,7 @@ import {
     Shield,
     Calendar,
     ClipboardList,
+    CalendarRange,
     Settings,
     Menu,
     X,
@@ -28,6 +29,7 @@ export const Sidebar = () => {
         { name: 'Chamada', path: '/attendance', icon: ClipboardList },
         { name: 'Sorteio', path: '/teams', icon: Shield },
         { name: 'Partidas', path: '/matches', icon: Calendar },
+        { name: 'Temporadas', path: '/seasons', icon: CalendarRange },
         { name: 'Classificação', path: '/leaderboard', icon: Trophy },
         { name: 'Configurações', path: '/settings', icon: Settings },
     ];

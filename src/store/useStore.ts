@@ -140,6 +140,13 @@ export const useStore = create<AppState>((set, get) => ({
         const { generatedTeams } = get();
         if (!generatedTeams) return;
 
+        // Fetch active season (if any)
+        const { data: seasonData } = await supabase
+            .from('seasons')
+            .select('id')
+            .eq('is_active', true)
+            .maybeSingle();
+
         const newMatch = {
             date: new Date().toISOString(),
             status: 'live',
@@ -147,7 +154,8 @@ export const useStore = create<AppState>((set, get) => ({
             team_b_score: 0,
             team_a_players: generatedTeams.teamA.map(p => p.id),
             team_b_players: generatedTeams.teamB.map(p => p.id),
-            duration: 600
+            duration: 600,
+            season_id: seasonData?.id ?? null,
         };
 
         const { data, error } = await supabase

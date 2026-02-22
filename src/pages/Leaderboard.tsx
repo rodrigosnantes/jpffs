@@ -1,9 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
+import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
-import { Trophy, Medal, TrendingUp, Target, Handshake, AlertTriangle, Percent } from 'lucide-react';
+import { Trophy, Medal, TrendingUp, Target, Handshake, AlertTriangle, Percent, CalendarRange } from 'lucide-react';
 import { cn } from '../utils/cn';
+
+interface Season { id: string; name: string; is_active: boolean; }
 
 // ─── Tab config ───────────────────────────────────────────────────────────────
 
@@ -38,25 +41,79 @@ export const Leaderboard = () => {
     const { players, matches } = useStore();
     const [activeTab, setActiveTab] = useState<TabId>('classification');
 
-    // ── Finished matches ────────────────────────────────────────────────────
-    const finishedMatches = useMemo(() =>
-        matches
-            .filter(m => m.status === 'finished')
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-        [matches]
-    );
+    // ── Season filter ────────────────────────────────────────────────────────
+    const [seasons, setSeasons] = useState<Season[]>([]);
+    const [selectedSeason, setSelectedSeason] = useState('');
+    const [seasonEvents, setSeasonEvents] = useState<{ match_id: string; player_id: string; assist_id: string | null; type: string }[]>([]);
+    const [seasonMatchIds, setSeasonMatchIds] = useState<string[]>([]);
+    const [loadingSeason, setLoadingSeason] = useState(false);
 
-    // ── Base stats with computed helpers ───────────────────────────────────
-    const basePlayers = useMemo(() =>
-        players.map(p => {
-            const points = p.stats.wins * 3 + p.stats.draws;
-            const played = p.stats.matches_played || 1; // avoid /0
-            const winrate = Math.round((p.stats.wins / played) * 100);
-            const cards = (p.stats.yellow_cards ?? 0) + (p.stats.red_cards ?? 0) * 2; // weighted
-            return { ...p, points, winrate, cards };
-        }),
-        [players]
-    );
+    useEffect(() => {
+        supabase.from('seasons').select('id,name,is_active').order('created_at', { ascending: false })
+            .then(({ data }) => setSeasons((data ?? []) as Season[]));
+    }, []);
+
+    useEffect(() => {
+        if (!selectedSeason) { setSeasonEvents([]); setSeasonMatchIds([]); return; }
+        setLoadingSeason(true);
+        (async () => {
+            const { data: mData } = await supabase
+                .from('matches').select('id').eq('season_id', selectedSeason).eq('status', 'finished');
+            const ids = (mData ?? []).map((m: { id: string }) => m.id);
+            setSeasonMatchIds(ids);
+            if (ids.length === 0) { setSeasonEvents([]); setLoadingSeason(false); return; }
+            const { data: evData } = await supabase
+                .from('match_events').select('match_id,player_id,assist_id,type').in('match_id', ids);
+            setSeasonEvents(evData ?? []);
+            setLoadingSeason(false);
+        })();
+    }, [selectedSeason]);
+
+    // ── Finished matches (filtered by season) ───────────────────────────────
+    const finishedMatches = useMemo(() => {
+        const all = matches.filter(m => m.status === 'finished')
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        if (!selectedSeason) return all;
+        return all.filter(m => seasonMatchIds.includes(m.id));
+    }, [matches, selectedSeason, seasonMatchIds]);
+
+    // ── Base stats (dynamic when season selected) ────────────────────────────
+    const basePlayers = useMemo(() => {
+        if (!selectedSeason) {
+            return players.map(p => {
+                const points = p.stats.wins * 3 + p.stats.draws;
+                const played = p.stats.matches_played || 1;
+                const winrate = Math.round((p.stats.wins / played) * 100);
+                const cards = (p.stats.yellow_cards ?? 0) + (p.stats.red_cards ?? 0) * 2;
+                return { ...p, points, winrate, cards };
+            });
+        }
+        return players.map(p => {
+            let wins = 0, draws = 0, losses = 0;
+            finishedMatches.forEach(m => {
+                const inA = (m.team_a_players ?? []).includes(p.id);
+                const inB = (m.team_b_players ?? []).includes(p.id);
+                if (!inA && !inB) return;
+                const sA = m.team_a_score ?? 0, sB = m.team_b_score ?? 0;
+                if (sA === sB) draws++;
+                else if (inA ? sA > sB : sB > sA) wins++;
+                else losses++;
+            });
+            const goals = seasonEvents.filter(e => e.player_id === p.id && e.type === 'Goal').length;
+            const assists = seasonEvents.filter(e => e.assist_id === p.id).length;
+            const yellow = seasonEvents.filter(e => e.player_id === p.id && e.type === 'YellowCard').length;
+            const red = seasonEvents.filter(e => e.player_id === p.id && e.type === 'RedCard').length;
+            const matches_played = wins + draws + losses;
+            const points = wins * 3 + draws;
+            const winrate = matches_played > 0 ? Math.round((wins / matches_played) * 100) : 0;
+            const cards = yellow + red * 2;
+            return {
+                ...p,
+                stats: { ...p.stats, wins, draws, losses, goals, assists, matches_played, yellow_cards: yellow, red_cards: red },
+                points, winrate, cards
+            };
+        });
+    }, [players, finishedMatches, selectedSeason, seasonEvents]);
 
     // ── Sorted lists per tab ────────────────────────────────────────────────
     const sorted = useMemo(() => {
@@ -143,10 +200,32 @@ export const Leaderboard = () => {
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
             {/* Header */}
-            <h1 className="text-3xl font-bold font-header text-primary flex items-center gap-3">
-                <Trophy className="text-primary" />
-                Rankings
-            </h1>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+                <h1 className="text-3xl font-bold font-header text-primary flex items-center gap-3">
+                    <Trophy className="text-primary" />
+                    Rankings
+                </h1>
+
+                {/* Season selector */}
+                {seasons.length > 0 && (
+                    <div className="flex items-center gap-2">
+                        <CalendarRange size={14} className="text-gray-500" />
+                        <select
+                            value={selectedSeason}
+                            onChange={e => setSelectedSeason(e.target.value)}
+                            className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-primary/50"
+                        >
+                            <option value="">Geral (todos os tempos)</option>
+                            {seasons.map(s => (
+                                <option key={s.id} value={s.id}>
+                                    {s.name}{s.is_active ? ' ★' : ''}
+                                </option>
+                            ))}
+                        </select>
+                        {loadingSeason && <span className="text-xs text-gray-600 animate-pulse">Carregando...</span>}
+                    </div>
+                )}
+            </div>
 
             {/* Tabs */}
             <div className="flex flex-wrap gap-2">

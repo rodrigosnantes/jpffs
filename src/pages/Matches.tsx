@@ -1,11 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
-import { Calendar, Users, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { Calendar, Users, ChevronDown, ChevronUp, Search, CalendarRange } from 'lucide-react';
 import { cn } from '../utils/cn';
 import type { Match } from '../types';
+
+interface Season { id: string; name: string; is_active: boolean; end_date: string | null; }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -27,7 +29,16 @@ const STATUS_LABEL: Record<string, string> = {
 export const Matches = () => {
     const { players } = useStore();
 
-    // Filters
+    // Seasons filter
+    const [seasons, setSeasons] = useState<Season[]>([]);
+    const [selectedSeason, setSelectedSeason] = useState('');
+
+    useEffect(() => {
+        supabase.from('seasons').select('id,name,is_active,end_date').order('created_at', { ascending: false })
+            .then(({ data }) => setSeasons((data ?? []) as Season[]));
+    }, []);
+
+    // Date filters
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
 
@@ -39,7 +50,7 @@ export const Matches = () => {
 
     // ── Query ──────────────────────────────────────────────────────────────
     const handleSearch = useCallback(async () => {
-        if (!dateFrom && !dateTo) return;
+        if (!dateFrom && !dateTo && !selectedSeason) return;
         setLoading(true);
         setSearched(true);
         setExpandedId(null);
@@ -49,14 +60,19 @@ export const Matches = () => {
             .select('*')
             .order('date', { ascending: false });
 
-        if (dateFrom) query = query.gte('date', dateFrom);
-        if (dateTo) query = query.lte('date', dateTo + 'T23:59:59');
+        if (selectedSeason) {
+            query = query.eq('season_id', selectedSeason);
+        } else {
+            if (dateFrom) query = query.gte('date', dateFrom);
+            if (dateTo) query = query.lte('date', dateTo + 'T23:59:59');
+        }
 
         const { data, error } = await query;
         if (error) console.error('Error fetching matches:', error);
         setResults((data as Match[]) ?? []);
         setLoading(false);
-    }, [dateFrom, dateTo]);
+    }, [dateFrom, dateTo, selectedSeason]);
+
 
     // ── Helpers ────────────────────────────────────────────────────────────
     const getPlayerName = (id: string) => {
@@ -71,7 +87,12 @@ export const Matches = () => {
         return 'D';
     };
 
-    const hasFilter = dateFrom || dateTo;
+    const hasFilter = dateFrom || dateTo || selectedSeason;
+
+    const handleClear = () => {
+        setDateFrom(''); setDateTo(''); setSelectedSeason('');
+        setResults([]); setSearched(false);
+    };
 
     // ── Render ─────────────────────────────────────────────────────────────
     return (
@@ -85,29 +106,53 @@ export const Matches = () => {
             {/* Search bar */}
             <Card className="flex flex-col sm:flex-row sm:items-end gap-4">
                 <div className="flex flex-wrap items-center gap-4 flex-1">
-                    <div className="flex items-center gap-2">
-                        <label className="text-xs text-gray-500 uppercase tracking-wider whitespace-nowrap">De</label>
-                        <input
-                            type="date"
-                            value={dateFrom}
-                            onChange={e => setDateFrom(e.target.value)}
-                            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-primary/50 [color-scheme:dark]"
-                        />
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <label className="text-xs text-gray-500 uppercase tracking-wider whitespace-nowrap">Até</label>
-                        <input
-                            type="date"
-                            value={dateTo}
-                            onChange={e => setDateTo(e.target.value)}
-                            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-primary/50 [color-scheme:dark]"
-                        />
-                    </div>
+                    {/* Season dropdown */}
+                    {seasons.length > 0 && (
+                        <div className="flex items-center gap-2">
+                            <label className="text-xs text-gray-500 uppercase tracking-wider whitespace-nowrap flex items-center gap-1">
+                                <CalendarRange size={12} /> Temporada
+                            </label>
+                            <select
+                                value={selectedSeason}
+                                onChange={e => { setSelectedSeason(e.target.value); setDateFrom(''); setDateTo(''); }}
+                                className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-primary/50"
+                            >
+                                <option value="">Todas</option>
+                                {seasons.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}{s.is_active ? ' ★' : ''}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    {/* Date range (only when no season selected) */}
+                    {!selectedSeason && (
+                        <>
+                            <div className="flex items-center gap-2">
+                                <label className="text-xs text-gray-500 uppercase tracking-wider whitespace-nowrap">De</label>
+                                <input
+                                    type="date"
+                                    value={dateFrom}
+                                    onChange={e => setDateFrom(e.target.value)}
+                                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-primary/50 [color-scheme:dark]"
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <label className="text-xs text-gray-500 uppercase tracking-wider whitespace-nowrap">Até</label>
+                                <input
+                                    type="date"
+                                    value={dateTo}
+                                    onChange={e => setDateTo(e.target.value)}
+                                    className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-primary/50 [color-scheme:dark]"
+                                />
+                            </div>
+                        </>
+                    )}
                 </div>
                 <div className="flex items-center gap-3">
                     {hasFilter && (
                         <button
-                            onClick={() => { setDateFrom(''); setDateTo(''); setResults([]); setSearched(false); }}
+                            onClick={handleClear}
                             className="text-xs text-gray-500 hover:text-white border border-white/10 px-3 py-2 rounded-lg transition-colors"
                         >
                             Limpar
