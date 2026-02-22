@@ -78,7 +78,7 @@ export const Players = () => {
                 name: form.name,
                 position: form.position,
                 level: form.level,
-                user_id: newUserId,
+                profile_id: newUserId,
                 stats: {
                     goals: 0, assists: 0, wins: 0, draws: 0, losses: 0,
                     matches_played: 0, yellow_cards: 0, red_cards: 0,
