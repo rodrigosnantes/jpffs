@@ -13,10 +13,14 @@ import { Leaderboard } from './pages/Leaderboard';
 import { Matches } from './pages/Matches';
 import { MatchDetail } from './pages/MatchDetail';
 import { Attendance } from './pages/Attendance';
+import { ToastProvider } from './contexts/ToastContext';
+import { ToastContainer } from './components/ui/ToastContainer';
+import { useRealtime } from './hooks/useRealtime';
 import { useAuthStore } from './store/useAuthStore';
 import { useStore } from './store/useStore';
 
-export default function App() {
+// Inner component so hooks can access ToastContext
+const AppInner = () => {
   const { initialize } = useAuthStore();
   const { fetchPlayers, fetchMatches } = useStore();
 
@@ -25,6 +29,8 @@ export default function App() {
     fetchPlayers();
     fetchMatches();
   }, []);
+
+  useRealtime(); // subscribe to match_events in real time
 
   return (
     <BrowserRouter>
@@ -44,6 +50,15 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
+      <ToastContainer />
     </BrowserRouter>
+  );
+};
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AppInner />
+    </ToastProvider>
   );
 }
