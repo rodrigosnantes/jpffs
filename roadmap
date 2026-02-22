@@ -7,6 +7,7 @@ Roadmap de Funcionalidades — JPFFS Manager
 3	Presença por Partida	Controle de quais jogadores confirmaram presença antes de iniciar o sorteio
 4	Foto do Jogador	Upload de avatar via Supabase Storage para substituir as iniciais
 
+
 🟡 Média prioridade (enriquecem a experiência)
 #	Funcionalidade	Descrição
 5	Rankings Alternativos	Tabs no Leaderboard: Goleadores, Assistentes, Cartões, Aproveitamento
@@ -23,3 +24,5 @@ Roadmap de Funcionalidades — JPFFS Manager
 13	Dark/Light mode	Toggle de tema
 14	PWA	Tornar o app instalável no celular via manifest.json + Service Worker
 Quer que eu implemente alguma(s) dessas funcionalidades? Me diz qual(is) te interessa(m) mais que eu já monto o plano de implementação detalhado.
+
+

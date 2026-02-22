@@ -37,23 +37,34 @@ export const Profile = () => {
 
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [fetchError, setFetchError] = useState<string | null>(null);
 
     // ── Fetch player linked to the logged-in user ─────────────────────────
+    const [sessionUserId, setSessionUserId] = useState<string | null>(null);
+
     const loadPlayer = async () => {
         if (!user) return;
         setLoading(true);
+        setFetchError(null);
+
+        // Always verify the actual session user from the JWT — don't rely on store
+        const { data: { user: sessionUser } } = await supabase.auth.getUser();
+        const userId = sessionUser?.id ?? user.id;
+        setSessionUserId(userId);
 
         const { data, error } = await supabase
             .from('players')
             .select('*')
-            .eq('profile_id', user.id)
-            .maybeSingle();
+            .eq('profile_id', userId)
+            .limit(1);
 
-        if (error) console.error('Profile fetch error:', error);
-
-        if (data) {
-            setPlayer(data as Player);
-            setFormData({ name: data.name, position: data.position });
+        if (error) {
+            console.error('Profile fetch error:', error);
+            setFetchError(`[${error.code}] ${error.message}`);
+            setPlayer(null);
+        } else if (data && data.length > 0) {
+            setPlayer(data[0] as Player);
+            setFormData({ name: data[0].name, position: data[0].position });
         } else {
             setPlayer(null);
         }
@@ -103,17 +114,33 @@ export const Profile = () => {
         return (
             <div className="space-y-6 animate-in fade-in duration-500">
                 <h1 className="text-3xl font-bold font-header text-primary">Meu Perfil</h1>
-                <Card className="py-16 flex flex-col items-center gap-4 text-center border-white/10">
+                <Card className="py-12 flex flex-col items-center gap-4 text-center border-white/10">
                     <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
                         <UserX size={28} className="text-gray-600" />
                     </div>
-                    <div>
+                    <div className="space-y-1">
                         <p className="font-bold text-white text-base">Nenhum jogador vinculado</p>
-                        <p className="text-sm text-gray-500 mt-1 max-w-sm">
+                        <p className="text-sm text-gray-500 max-w-sm">
                             Sua conta ainda não está associada a um jogador.
-                            Peça ao administrador para cadastrar seu jogador com o e-mail <strong className="text-gray-400">{user?.email}</strong>.
+                            Peça ao administrador para cadastrar seu jogador com o e-mail{' '}
+                            <strong className="text-gray-400">{user?.email}</strong>.
                         </p>
                     </div>
+
+                    {/* Debug info — helps diagnose the root cause */}
+                    <div className="mt-4 w-full max-w-md bg-white/3 border border-white/10 rounded-xl p-4 text-left space-y-2">
+                        <p className="text-[10px] uppercase tracking-wider text-gray-600 font-bold">Info de diagnóstico</p>
+                        <div className="font-mono text-xs space-y-1">
+                            <p><span className="text-gray-500">store user id:   </span><span className="text-gray-300 break-all">{user?.id}</span></p>
+                            <p><span className="text-gray-500">session user id: </span><span className={(sessionUserId && user?.id && sessionUserId !== user?.id) ? 'text-red-400' : 'text-green-400'}>{sessionUserId ?? '...'}</span></p>
+                            <p><span className="text-gray-500">filtrando por:   </span><span className="text-gray-300">players.profile_id = session_id</span></p>
+                            {fetchError
+                                ? <p><span className="text-red-500">erro: </span><span className="text-red-400">{fetchError}</span></p>
+                                : <p><span className="text-yellow-500">resultado: </span><span className="text-yellow-400">query ok, mas sem linhas correspondentes</span></p>
+                            }
+                        </div>
+                    </div>
+
                 </Card>
             </div>
         );

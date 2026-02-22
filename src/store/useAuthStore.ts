@@ -11,7 +11,7 @@ interface AuthState {
     role: UserRole | null;
     isLoading: boolean;
     isAdmin: boolean;
-    initialize: () => Promise<void>;
+    initialize: () => void;
     signIn: (email: string, password: string) => Promise<{ error: any }>;
     signOut: () => Promise<{ error: any }>;
     fetchRole: (userId: string) => Promise<void>;
@@ -25,20 +25,39 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     isLoading: true,
     isAdmin: false,
 
+    // Fetch the role from the profiles table — never throws, always resolves
     fetchRole: async (userId: string) => {
-        const { data } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', userId)
-            .maybeSingle();
-        const role = (data?.role ?? 'user') as UserRole;
-        set({ role, isAdmin: role === 'admin' });
+        try {
+            const { data } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (!data) {
+                // Profile row missing — create it with default role
+                const { data: { user } } = await supabase.auth.getUser();
+                await supabase.from('profiles').upsert({
+                    id: userId,
+                    email: user?.email ?? '',
+                    role: 'user',
+                });
+                set({ role: 'user', isAdmin: false });
+                return;
+            }
+
+            const role = (data.role ?? 'user') as UserRole;
+            set({ role, isAdmin: role === 'admin' });
+        } catch {
+            // If profiles table is inaccessible, default safely to 'user'
+            set({ role: 'user', isAdmin: false });
+        }
     },
 
-    initialize: async () => {
-        // Use ONLY onAuthStateChange as source of truth.
-        // Supabase fires INITIAL_SESSION immediately on subscribe,
-        // so there's no need to call getSession() separately.
+    // Initialize: use ONLY onAuthStateChange as source of truth.
+    // Supabase fires INITIAL_SESSION immediately on subscribe,
+    // so there's no need to call getSession() separately.
+    initialize: () => {
         let lastUserId: string | null = null;
 
         supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -46,10 +65,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             set({ user: u, isLoading: false });
 
             if (u) {
-                // Guard: skip fetchRole if it's the same user (avoids double-call on token refresh)
+                // Guard: skip fetchRole if it's the same user
                 if (u.id !== lastUserId) {
                     lastUserId = u.id;
-                    await get().fetchRole(u.id);
+                    get().fetchRole(u.id); // fire-and-forget — don't await here
                 }
             } else {
                 lastUserId = null;
@@ -58,12 +77,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
     },
 
+    // signIn: just authenticate — let onAuthStateChange handle state updates.
+    // Never await fetchRole here; that would block the Login page.
     signIn: async (email, password) => {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) return { error };
-        set({ user: data.user, isLoading: false });
-        if (data.user) await get().fetchRole(data.user.id);
-        return { error: null };
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        return { error: error ?? null };
     },
 
     signOut: async () => {
