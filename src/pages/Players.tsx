@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -62,11 +62,13 @@ export const Players = () => {
                         <tbody className="divide-y divide-white/5">
                             {players.map((player) => (
                                 <tr key={player.id} className="hover:bg-white/5 transition-colors">
-                                    <td className="p-4 font-medium flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-primary">
-                                            {player.name.substring(0, 2).toUpperCase()}
-                                        </div>
-                                        {player.name}
+                                    <td className="p-4 font-medium">
+                                        <Link to={`/jogadores/${player.id}`} className="flex items-center gap-3 hover:text-white transition-colors group/name">
+                                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-primary group-hover/name:bg-primary group-hover/name:text-background transition-colors">
+                                                {player.name.substring(0, 2).toUpperCase()}
+                                            </div>
+                                            {player.name}
+                                        </Link>
                                     </td>
                                     <td className="p-4 text-gray-300">
                                         <div className="flex items-center gap-2">
