@@ -140,7 +140,10 @@ export const MatchControlPanel = () => {
                 <div className="flex gap-3 items-center">
                     {isAdmin ? (
                         !currentMatch.isActive && currentMatch.totalElapsedTime === 0 ? (
-                            <Button onClick={startMatch} className="bg-green-600 hover:bg-green-700 text-white">
+                            <Button onClick={async () => {
+                                const res = await startMatch();
+                                if (res?.error) alert(res.error);
+                            }} className="bg-green-600 hover:bg-green-700 text-white">
                                 <Play size={20} className="mr-2" /> Iniciar Partida
                             </Button>
                         ) : (

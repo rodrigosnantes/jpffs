@@ -73,21 +73,17 @@ export const Players = () => {
                 role: 'user',
             });
 
-            // ── Step 5: Insert player linked to user_id ────────────────────
-            const { error: playerError } = await supabase.from('players').insert([{
+            // ── Step 5: Update the automatically created player ────────────────
+            // A Supabase trigger automatically creates the profile & player on auth.users insert.
+            // Wait briefly for the trigger to finish processing
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            const { error: playerError } = await supabase.from('players').update({
                 name: form.name,
                 position: form.position,
                 level: form.level,
-                profile_id: newUserId,
-                stats: {
-                    goals: 0, assists: 0, wins: 0, draws: 0, losses: 0,
-                    matches_played: 0, yellow_cards: 0, red_cards: 0,
-                },
-                attributes: {
-                    attack: 50, defense: 50, pace: 50,
-                    shooting: 50, passing: 50, physical: 50,
-                },
-            }]);
+                // Stats and Attributes are defaulted by the trigger.
+            }).eq('profile_id', newUserId);
 
             if (playerError) throw new Error(playerError.message);
 

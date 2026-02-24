@@ -3,8 +3,9 @@ import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { CalendarRange, Plus, CheckCircle, XCircle, Clock, Trophy } from 'lucide-react';
+import { CalendarRange, Plus, CheckCircle, XCircle, Clock, Trophy, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { SeasonStats } from '../components/season/SeasonStats';
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -26,6 +27,7 @@ export const Seasons = () => {
     const [creating, setCreating] = useState(false);
     const [form, setForm] = useState({ name: '', start_date: new Date().toISOString().split('T')[0] });
     const [showForm, setShowForm] = useState(false);
+    const [expandedSeasonId, setExpandedSeasonId] = useState<string | null>(null);
     const { isAdmin } = useAuthStore();
 
     // ── Load seasons ──────────────────────────────────────────────────────
@@ -203,6 +205,12 @@ export const Seasons = () => {
                                     <div className="text-lg font-bold text-white">{season.match_count}</div>
                                     <div className="text-[10px] text-gray-500 uppercase tracking-wider">Partidas</div>
                                 </div>
+                                <button
+                                    onClick={() => setExpandedSeasonId(expandedSeasonId === season.id ? null : season.id)}
+                                    className="p-2 ml-2 hover:bg-white/10 rounded-full text-gray-400 transition-colors"
+                                >
+                                    {expandedSeasonId === season.id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                </button>
                             </div>
 
                             {/* Actions — admin only */}
@@ -230,10 +238,15 @@ export const Seasons = () => {
                                     )}
                                 </div>
                             )}
+
+                            {expandedSeasonId === season.id && (
+                                <SeasonStats seasonId={season.id} />
+                            )}
                         </Card>
                     ))}
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };

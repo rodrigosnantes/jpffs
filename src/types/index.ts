@@ -39,6 +39,8 @@ export interface Match {
     team_a_players: string[]; // Array of player IDs
     team_b_players: string[]; // Array of player IDs
     status: MatchStatus;
+    season_id?: string | null;
+    seasons?: { name: string } | null;
 }
 
 // Live Match Tracking Types

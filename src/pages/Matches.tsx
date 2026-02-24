@@ -57,7 +57,7 @@ export const Matches = () => {
 
         let query = supabase
             .from('matches')
-            .select('*')
+            .select('*, seasons(name)')
             .order('date', { ascending: false });
 
         if (selectedSeason) {
@@ -235,6 +235,11 @@ export const Matches = () => {
                                         <span className={cn('text-xs font-bold px-2 py-0.5 rounded border', STATUS_STYLE[match.status] ?? STATUS_STYLE.scheduled)}>
                                             {STATUS_LABEL[match.status] ?? match.status}
                                         </span>
+                                        {match.seasons?.name && (
+                                            <span className="hidden md:inline-flex text-[10px] text-gray-400 border border-white/10 px-2 py-0.5 rounded-full bg-white/5 ml-2">
+                                                {match.seasons.name}
+                                            </span>
+                                        )}
                                         <div className="flex items-center gap-3 ml-auto sm:ml-0">
                                             <span className={cn('text-sm font-semibold', winner === 'A' ? 'text-emerald-400' : 'text-gray-300')}>Time A</span>
                                             <div className="flex items-center gap-2 bg-white/5 rounded-lg px-4 py-2 font-mono">

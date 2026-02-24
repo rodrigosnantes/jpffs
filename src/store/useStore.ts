@@ -20,7 +20,7 @@ interface AppState {
     setGeneratedTeams: (teams: { teamA: Player[], teamB: Player[] }) => void;
 
     // Match Actions
-    startMatch: () => void;
+    startMatch: () => Promise<{ error?: string }>;
     pauseMatch: () => void;
     resumeMatch: () => void;
     endMatch: () => void;
@@ -138,7 +138,7 @@ export const useStore = create<AppState>((set, get) => ({
     // Match Actions Implementation
     startMatch: async () => {
         const { generatedTeams } = get();
-        if (!generatedTeams) return;
+        if (!generatedTeams) return { error: 'Times não gerados' };
 
         // Fetch active season (if any)
         const { data: seasonData } = await supabase
@@ -146,6 +146,10 @@ export const useStore = create<AppState>((set, get) => ({
             .select('id')
             .eq('is_active', true)
             .maybeSingle();
+
+        if (!seasonData) {
+            return { error: 'Não há uma Temporada ativa. Crie ou ative uma Temporada no painel de Temporadas antes de iniciar a partida.' };
+        }
 
         const newMatch = {
             date: new Date().toISOString(),
@@ -166,7 +170,7 @@ export const useStore = create<AppState>((set, get) => ({
 
         if (error) {
             console.error('Error starting match:', error);
-            return;
+            return { error: error.message };
         }
 
         set((state) => ({
@@ -182,6 +186,8 @@ export const useStore = create<AppState>((set, get) => ({
             },
             matches: [data as Match, ...state.matches] // Optimistic update or reload?
         }));
+
+        return {};
     },
 
     pauseMatch: () => set((state) => {

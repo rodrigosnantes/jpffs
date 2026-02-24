@@ -22,6 +22,7 @@ import { ToastContainer } from './components/ui/ToastContainer';
 import { useRealtime } from './hooks/useRealtime';
 import { useAuthStore } from './store/useAuthStore';
 import { useStore } from './store/useStore';
+import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
 // Inner component so hooks can access ToastContext
 const AppInner = () => {
@@ -40,20 +41,24 @@ const AppInner = () => {
     <BrowserRouter>
       <Layout>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/players" element={<Players />} />
-          <Route path="/players/:id" element={<PlayerEdit />} />
-          <Route path="/jogadores/:id" element={<PlayerProfile />} />
-          <Route path="/teams" element={isAdmin ? <Teams /> : <Navigate to="/" replace />} />
-          <Route path="/attendance" element={isAdmin ? <Attendance /> : <Navigate to="/" replace />} />
-          <Route path="/seasons" element={isAdmin ? <Seasons /> : <Navigate to="/" replace />} />
-          <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/matches" element={<Matches />} />
-          <Route path="/matches/:id" element={<MatchDetail />} />
+
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/players" element={<Players />} />
+            <Route path="/players/:id" element={<PlayerEdit />} />
+            <Route path="/jogadores/:id" element={<PlayerProfile />} />
+            <Route path="/teams" element={isAdmin ? <Teams /> : <Navigate to="/" replace />} />
+            <Route path="/attendance" element={isAdmin ? <Attendance /> : <Navigate to="/" replace />} />
+            <Route path="/seasons" element={isAdmin ? <Seasons /> : <Navigate to="/" replace />} />
+            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/matches" element={<Matches />} />
+            <Route path="/matches/:id" element={<MatchDetail />} />
+          </Route>
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
