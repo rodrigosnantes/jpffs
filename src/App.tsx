@@ -24,6 +24,17 @@ import { useAuthStore } from './store/useAuthStore';
 import { useStore } from './store/useStore';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
+export default function App() {
+  return (
+    <ThemeProvider>
+      <ToastProvider>
+        <AppInner />
+      </ToastProvider>
+    </ThemeProvider>
+  );
+}
+
+
 // Inner component so hooks can access ToastContext
 const AppInner = () => {
   const { initialize, isAdmin } = useAuthStore();
@@ -67,12 +78,3 @@ const AppInner = () => {
   );
 };
 
-export default function App() {
-  return (
-    <ThemeProvider>
-      <ToastProvider>
-        <AppInner />
-      </ToastProvider>
-    </ThemeProvider>
-  );
-}
