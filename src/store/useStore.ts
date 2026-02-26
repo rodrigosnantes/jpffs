@@ -11,6 +11,10 @@ interface AppState {
     // Live Match State
     currentMatch: LiveMatchState;
 
+    // UI State
+    isSidebarOpen: boolean;
+    setSidebarOpen: (isOpen: boolean) => void;
+
     // Actions
     fetchPlayers: () => Promise<void>;
     fetchMatches: () => Promise<void>;
@@ -43,6 +47,9 @@ export const useStore = create<AppState>((set, get) => ({
         teamBScore: 0,
         events: []
     },
+
+    isSidebarOpen: true,
+    setSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
 
     fetchPlayers: async () => {
         const { data, error } = await supabase

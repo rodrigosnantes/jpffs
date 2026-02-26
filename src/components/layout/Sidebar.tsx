@@ -19,9 +19,10 @@ import { cn } from '../../utils/cn';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useStore } from '../../store/useStore';
 
 export const Sidebar = () => {
-    const [isOpen, setIsOpen] = useState(true);
+    const { isSidebarOpen: isOpen, setSidebarOpen: setIsOpen } = useStore();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const { themeId, setTheme, themes } = useTheme();
     const [showThemes, setShowThemes] = useState(false);
