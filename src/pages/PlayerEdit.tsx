@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { ArrowLeft, Save, Trash2, Shield, User, Target, Footprints, Activity, Zap, Trophy, Calendar } from 'lucide-react';
 import { cn } from '../utils/cn';
+import type { PlayerPlan, Position } from '../types';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, Legend, PieChart, Pie, Cell,
@@ -63,8 +64,9 @@ export const PlayerEdit = () => {
 
     const [formData, setFormData] = useState({
         name: '',
-        position: 'Line' as 'Goalkeeper' | 'Line',
+        position: 'Line' as Position,
         level: 3,
+        plan: 'Amateur' as PlayerPlan,
         attributes: { attack: 50, defense: 50, pace: 50, shooting: 50, physical: 50, passing: 50 }
     });
 
@@ -78,6 +80,7 @@ export const PlayerEdit = () => {
                 name: player.name,
                 position: player.position,
                 level: player.level,
+                plan: player.plan || 'Amateur',
                 attributes: player.attributes || { attack: 50, defense: 50, pace: 50, shooting: 50, physical: 50, passing: 50 }
             });
         } else {
@@ -215,6 +218,34 @@ export const PlayerEdit = () => {
                             className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary" />
                         <div className="flex justify-between text-xs text-gray-500 font-mono">
                             <span>Iniciante</span><span>Pro</span>
+                        </div>
+                    </div>
+
+                    {/* Player Plan */}
+                    <div className="space-y-2 pt-2 border-t border-white/10">
+                        <label className="text-sm font-medium text-gray-400">Plano de Sócio</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {(['Legendary', 'Pro', 'Amateur'] as const).map(plan => (
+                                <button
+                                    key={plan}
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, plan })}
+                                    className={cn(
+                                        'px-2 py-3 rounded-xl border text-xs font-bold transition-all uppercase flex flex-col items-center justify-center gap-1',
+                                        formData.plan === plan
+                                            ? plan === 'Legendary'
+                                                ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400 shadow-[0_0_15px_rgba(234,179,8,0.2)]'
+                                                : plan === 'Pro'
+                                                    ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                                                    : 'bg-gray-500/20 border-gray-500 text-gray-300'
+                                            : 'bg-white/5 border-white/10 text-gray-500 hover:bg-white/10'
+                                    )}
+                                >
+                                    {plan === 'Legendary' && <Shield size={16} className="mb-0.5" />}
+                                    {plan === 'Pro' && <span className="mb-0.5 text-base">⭐</span>}
+                                    {plan === 'Legendary' ? 'Lendário' : plan === 'Amateur' ? 'Amador' : plan}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </Card>

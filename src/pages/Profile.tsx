@@ -174,12 +174,36 @@ export const Profile = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* ── Edit Card ────────────────────────────────────────── */}
-                <Card className="col-span-1 space-y-6 h-fit bg-gradient-to-br from-surface to-black/40">
-                    <div className="flex flex-col items-center mb-6">
-                        <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center text-3xl font-bold text-primary border-4 border-primary/20 mb-4 shadow-lg shadow-primary/10">
-                            {player.name.substring(0, 2).toUpperCase()}
+                <Card className="col-span-1 space-y-6 h-fit bg-gradient-to-br from-surface to-black/40 relative overflow-hidden">
+                    {/* Decorative glow based on plan */}
+                    {player.plan === 'Legendary' && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600" />}
+                    {player.plan === 'Pro' && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600" />}
+
+                    <div className="flex flex-col items-center mb-6 pt-4">
+                        <div className="relative">
+                            <div className={cn(
+                                "w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold mb-4 shadow-lg",
+                                player.plan === 'Legendary' ? "bg-yellow-500/20 text-yellow-500 border-4 border-yellow-500/50 shadow-yellow-500/20" :
+                                    player.plan === 'Pro' ? "bg-blue-500/20 text-blue-500 border-4 border-blue-500/50 shadow-blue-500/20" :
+                                        "bg-primary/20 text-primary border-4 border-primary/20 shadow-primary/10"
+                            )}>
+                                {player.name.substring(0, 2).toUpperCase()}
+                            </div>
+
+                            {/* Plan Badge */}
+                            {player.plan === 'Legendary' && (
+                                <div className="absolute -bottom-2 -right-2 bg-yellow-500 text-black text-[10px] font-black uppercase px-2 py-1 rounded-full flex items-center gap-1 border-2 border-surface shadow-xl">
+                                    <Shield size={10} /> Lendário
+                                </div>
+                            )}
+                            {player.plan === 'Pro' && (
+                                <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white text-[10px] font-black uppercase px-2 py-1 rounded-full border-2 border-surface shadow-xl">
+                                    ⭐ PRO
+                                </div>
+                            )}
                         </div>
-                        <h2 className="text-2xl font-bold text-white">{player.name}</h2>
+
+                        <h2 className="text-2xl font-bold text-white mt-2">{player.name}</h2>
                         <span className="text-gray-400 font-medium">Nível {player.level}</span>
                     </div>
 

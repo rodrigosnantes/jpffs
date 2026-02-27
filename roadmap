@@ -26,3 +26,27 @@ Roadmap de Funcionalidades — JPFFS Manager
 Quer que eu implemente alguma(s) dessas funcionalidades? Me diz qual(is) te interessa(m) mais que eu já monto o plano de implementação detalhado.
 
 
+----------------------------------------
+
+
+1. Gestão Financeira (O Caixa da Galera)
+Mensalidade / Rateio: Módulo para o admin marcar quem pagou a mensalidade do mês ou a diária (rateio do campo/churrasco).
+Inadimplência: Jogador com status devedor fica com um "aviso" vermelho ou até é bloqueado do sorteio de times até acertar.
+⚖️ 2. Sistema de Punições e "Caixinha"
+Controle de Suspensões: Acumulou 3 cartões amarelos ou 1 vermelho? O sistema avisa que o jogador está suspenso do próximo jogo.
+Multa em dinheiro: Quem toma cartão paga uma multa pro caixa do churrasco (ex: amarelo R$ 5, vermelho R$ 10). O app controla o saldo devedor de multas de cada um.
+🏆 3. Gamificação (Conquistas e Badges)
+Criar troféus automáticos que aparecem no perfil do jogador:
+"Artilheiro" (Mais gols na temporada)
+"Açougueiro" (Mais faltas/cartões)
+"Garçom" (Mais assistências)
+"Paredão" (Goleiro com mais clean sheets)
+🎯 4. Modo "Draft" com Capitães
+Em vez de só clicar em "Sortear Times" (que distribui por nível automaticamente), os 2 melhores jogadores (ou escolhidos) viram Capitães.
+O app mostra uma tela interativa de "Draft", onde os capitães alternam escolhendo os jogadores disponíveis um a um, mostrando os cards de atributos na tela.
+📊 5. Evolução Dinâmica de Atributos (Estilo FIFA)
+Hoje o admin edita os atributos manualmente (Passe 80, Chute 70, etc).
+Ideia: O rating do jogador evolui (ou cai) automaticamente conforme sua performance real ao longo das temporadas. Ganhou muitos jogos? O overall sobe. Fez muitos gols? O Chute ganha +2 pontos.
+🗳️ 6. Votação da Galera (MVP e Bagre do Jogo)
+Fim da partida, o app libera um período de 24h para votação.
+Cada jogador que estava logado na partida entra e vota anonimamente no Bola Cheia (MVP) e no Bola Murcha (Bagre).

@@ -1,4 +1,5 @@
 export type Position = 'Goalkeeper' | 'Line';
+export type PlayerPlan = 'Legendary' | 'Pro' | 'Amateur';
 
 
 export interface PlayerStats {
@@ -18,6 +19,7 @@ export interface Player {
     photo_url?: string;
     position: Position;
     level: number; // 1 to 5
+    plan?: PlayerPlan; // 'Legendary', 'Pro', 'Amateur'
     stats: PlayerStats;
     attributes?: { // For Radar Chart
         attack: number;

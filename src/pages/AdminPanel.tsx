@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Shield, UserPlus, Users, Mail, Lock, CheckCircle, AlertCircle, Trash2, Crown } from 'lucide-react';
+import type { PlayerPlan } from '../types';
 import { cn } from '../utils/cn';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -33,6 +34,7 @@ export const AdminPanel = () => {
         password: '',
         name: '',
         role: 'user' as 'admin' | 'user',
+        plan: 'Amateur' as PlayerPlan,
     });
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -66,7 +68,7 @@ export const AdminPanel = () => {
                 email: form.email,
                 password: form.password,
                 options: {
-                    data: { name: form.name || form.email.split('@')[0] },
+                    data: { name: form.name || form.email.split('@')[0], plan: form.plan },
                 },
             });
 
@@ -101,7 +103,7 @@ export const AdminPanel = () => {
                 type: 'success',
                 msg: `Usuário "${form.email}" criado como ${form.role === 'admin' ? 'Administrador' : 'Membro'}!`,
             });
-            setForm({ email: '', password: '', name: '', role: 'user' });
+            setForm({ email: '', password: '', name: '', role: 'user', plan: 'Amateur' });
             loadUsers();
 
         } catch (err: any) {
@@ -224,6 +226,32 @@ export const AdminPanel = () => {
                                     <Crown size={18} />
                                     Admin
                                 </button>
+                            </div>
+                        </div>
+
+                        {/* Plan */}
+                        <div className="space-y-1.5 pt-2 border-t border-white/5">
+                            <label className="text-xs text-gray-500 uppercase tracking-wider">Plano de Sócio</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {(['Legendary', 'Pro', 'Amateur'] as const).map(plan => (
+                                    <button
+                                        key={plan}
+                                        type="button"
+                                        onClick={() => setForm(f => ({ ...f, plan }))}
+                                        className={cn(
+                                            'p-2 rounded-lg border text-[10px] font-bold transition-colors uppercase tracking-wide',
+                                            form.plan === plan
+                                                ? plan === 'Legendary'
+                                                    ? 'bg-yellow-500/20 border-yellow-500 text-yellow-500'
+                                                    : plan === 'Pro'
+                                                        ? 'bg-blue-500/20 border-blue-500 text-blue-400'
+                                                        : 'bg-gray-500/20 border-gray-500 text-gray-300'
+                                                : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'
+                                        )}
+                                    >
+                                        {plan === 'Legendary' ? 'Lendário' : plan === 'Amateur' ? 'Amador' : plan}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 

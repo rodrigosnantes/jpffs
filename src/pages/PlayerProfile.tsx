@@ -171,16 +171,38 @@ export const PlayerProfile = () => {
 
             {/* ── Hero Card ──────────────────────────────────────────────── */}
             <Card className="relative overflow-hidden">
+                {/* Decorative glow based on plan */}
+                {player.plan === 'Legendary' && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600" />}
+                {player.plan === 'Pro' && <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600" />}
+
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
                 <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-6 p-2">
                     {/* Avatar */}
-                    <div className={cn(
-                        'w-24 h-24 rounded-2xl flex items-center justify-center text-3xl font-black border-2 shrink-0',
-                        isGoalie
-                            ? 'bg-yellow-500/15 border-yellow-500/40 text-yellow-300'
-                            : 'bg-primary/15 border-primary/40 text-primary'
-                    )}>
-                        {player.name.substring(0, 2).toUpperCase()}
+                    <div className="relative">
+                        <div className={cn(
+                            'w-24 h-24 rounded-2xl flex items-center justify-center text-3xl font-black border-2 shrink-0 relative overflow-hidden',
+                            player.plan === 'Legendary'
+                                ? 'bg-yellow-500/15 border-yellow-500/50 text-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]'
+                                : player.plan === 'Pro'
+                                    ? 'bg-blue-500/15 border-blue-500/50 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                                    : isGoalie
+                                        ? 'bg-yellow-500/15 border-yellow-500/40 text-yellow-300'
+                                        : 'bg-primary/15 border-primary/40 text-primary'
+                        )}>
+                            {player.name.substring(0, 2).toUpperCase()}
+                        </div>
+
+                        {/* Plan Badge */}
+                        {player.plan === 'Legendary' && (
+                            <div className="absolute -bottom-2 -right-2 bg-yellow-500 text-black text-[10px] font-black uppercase px-2 py-1 rounded-full flex items-center gap-1 border-2 border-surface shadow-xl z-10">
+                                <Shield size={10} /> Lendário
+                            </div>
+                        )}
+                        {player.plan === 'Pro' && (
+                            <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white text-[10px] font-black uppercase px-2 py-1 rounded-full border-2 border-surface shadow-xl z-10">
+                                ⭐ PRO
+                            </div>
+                        )}
                     </div>
 
                     {/* Name + meta */}
