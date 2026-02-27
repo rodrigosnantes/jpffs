@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -119,9 +120,9 @@ export const Teams = () => {
                         {attendanceLoaded && attendedPlayers.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-12 text-gray-500 gap-3">
                                 <p className="text-sm">Nenhum jogador confirmado para hoje.</p>
-                                <a href="/attendance" className="text-primary text-sm hover:underline">
+                                <Link to="/attendance" className="text-primary text-sm hover:underline">
                                     → Fazer a chamada primeiro
-                                </a>
+                                </Link>
                             </div>
                         ) : (
                             <>

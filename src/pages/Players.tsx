@@ -132,15 +132,15 @@ export const Players = () => {
                                 <th className="p-4 font-medium">Posição</th>
                                 <th className="p-4 font-medium text-center">Nível</th>
                                 <th className="p-4 font-medium text-center">Partidas</th>
-                                {isAdmin && <th className="p-4 font-medium text-right">Ações</th>}
+                                <th className="p-4 font-medium text-right">Ações</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {players.map((player) => (
                                 <tr key={player.id} className="hover:bg-white/5 transition-colors">
                                     <td className="p-4 font-medium">
-                                        <Link to={`/jogadores/${player.id}`} className="flex items-center gap-3 hover:text-white transition-colors group/name">
-                                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-primary group-hover/name:bg-primary group-hover/name:text-background transition-colors">
+                                        <div className="flex items-center gap-3 group/name">
+                                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-primary transition-colors">
                                                 {player.name.substring(0, 2).toUpperCase()}
                                             </div>
                                             <div className="flex flex-col">
@@ -149,7 +149,7 @@ export const Players = () => {
                                                 {player.plan === 'Pro' && <span className="text-[10px] text-blue-400 font-bold uppercase">PRO</span>}
                                                 {(!player.plan || player.plan === 'Amateur') && <span className="text-[10px] text-gray-500 uppercase">Amador</span>}
                                             </div>
-                                        </Link>
+                                        </div>
                                     </td>
                                     <td className="p-4 text-gray-300">
                                         <div className="flex items-center gap-2">
@@ -168,28 +168,39 @@ export const Players = () => {
                                     <td className="p-4 text-center text-gray-400">
                                         {player.stats.matches_played}
                                     </td>
-                                    {isAdmin && (
-                                        <td className="p-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    onClick={() => navigate(`/players/${player.id}`)}
-                                                    className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors"
-                                                >
-                                                    <Edit2 size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        if (confirm('Tem certeza que deseja excluir este jogador?')) {
-                                                            deletePlayer(player.id);
-                                                        }
-                                                    }}
-                                                    className="p-2 hover:bg-secondary/10 rounded text-secondary hover:text-red-400 transition-colors"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    )}
+                                    <td className="p-4 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => navigate(`/jogadores/${player.id}`)}
+                                                className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors"
+                                                title="Visualizar Perfil"
+                                            >
+                                                <User size={18} />
+                                            </button>
+                                            {isAdmin && (
+                                                <>
+                                                    <button
+                                                        onClick={() => navigate(`/players/${player.id}`)}
+                                                        className="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors"
+                                                        title="Editar"
+                                                    >
+                                                        <Edit2 size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (confirm('Tem certeza que deseja excluir este jogador?')) {
+                                                                deletePlayer(player.id);
+                                                            }
+                                                        }}
+                                                        className="p-2 hover:bg-secondary/10 rounded text-secondary hover:text-red-400 transition-colors"
+                                                        title="Excluir"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>

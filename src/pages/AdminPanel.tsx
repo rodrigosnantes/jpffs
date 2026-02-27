@@ -28,6 +28,8 @@ export const AdminPanel = () => {
 
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [loadingUsers, setLoadingUsers] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const usersPerPage = 10;
 
     const [form, setForm] = useState({
         email: '',
@@ -130,6 +132,12 @@ export const AdminPanel = () => {
         await supabase.from('profiles').delete().eq('id', userId);
         loadUsers();
     };
+
+    // ── Pagination Logic ──────────────────────────────────────────────────
+    const indexOfLastUser = currentPage * usersPerPage;
+    const indexOfFirstUser = indexOfLastUser - usersPerPage;
+    const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
+    const totalPages = Math.ceil(users.length / usersPerPage);
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -302,7 +310,7 @@ export const AdminPanel = () => {
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {users.map(u => (
+                            {currentUsers.map(u => (
                                 <div
                                     key={u.id}
                                     className={cn(
@@ -371,6 +379,33 @@ export const AdminPanel = () => {
                                     )}
                                 </div>
                             ))}
+                        </div>
+                    )}
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5">
+                            <Button
+                                variant="ghost"
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="text-sm px-3 py-1.5 h-auto text-gray-400"
+                            >
+                                Anterior
+                            </Button>
+
+                            <span className="text-sm text-gray-500 font-medium">
+                                Página {currentPage} de {totalPages}
+                            </span>
+
+                            <Button
+                                variant="ghost"
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="text-sm px-3 py-1.5 h-auto text-gray-400"
+                            >
+                                Próxima
+                            </Button>
                         </div>
                     )}
                 </Card>

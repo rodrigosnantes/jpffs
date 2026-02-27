@@ -158,8 +158,12 @@ export const useStore = create<AppState>((set, get) => ({
             return { error: 'Não há uma Temporada ativa. Crie ou ative uma Temporada no painel de Temporadas antes de iniciar a partida.' };
         }
 
+        // Helper to get local date in YYYY-MM-DD format
+        const today = new Date();
+        const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
         const newMatch = {
-            date: new Date().toISOString(),
+            date: localDate,
             status: 'live',
             team_a_score: 0,
             team_b_score: 0,
