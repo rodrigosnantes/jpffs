@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Shield, UserPlus, Users, Mail, Lock, CheckCircle, AlertCircle, Trash2, Crown } from 'lucide-react';
+import { Shield, UserPlus, Users, Mail, Lock, CheckCircle, AlertCircle, Trash2, Crown, Search } from 'lucide-react';
 import type { PlayerPlan } from '../types';
 import { cn } from '../utils/cn';
 
@@ -29,7 +29,12 @@ export const AdminPanel = () => {
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [loadingUsers, setLoadingUsers] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
     const usersPerPage = 10;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
 
     const [form, setForm] = useState({
         email: '',
@@ -133,11 +138,18 @@ export const AdminPanel = () => {
         loadUsers();
     };
 
-    // ── Pagination Logic ──────────────────────────────────────────────────
+    // ── Pagination & Search Logic ─────────────────────────────────────────
+    const filteredUsers = users.filter((u) => {
+        const term = searchTerm.toLowerCase();
+        const nameMatch = u.name?.toLowerCase().includes(term);
+        const emailMatch = u.email.toLowerCase().includes(term);
+        return nameMatch || emailMatch;
+    });
+
     const indexOfLastUser = currentPage * usersPerPage;
     const indexOfFirstUser = indexOfLastUser - usersPerPage;
-    const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
-    const totalPages = Math.ceil(users.length / usersPerPage);
+    const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+    const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -288,14 +300,24 @@ export const AdminPanel = () => {
 
                 {/* ── Users List ─────────────────────────────────────────── */}
                 <Card className="lg:col-span-3">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                         <div className="flex items-center gap-2">
                             <Users size={18} className="text-gray-400" />
                             <h2 className="font-bold text-white text-base">Usuários Cadastrados</h2>
+                            <span className="text-xs text-gray-600 bg-white/5 px-2 py-1 rounded-full">
+                                {filteredUsers.length} total
+                            </span>
                         </div>
-                        <span className="text-xs text-gray-600 bg-white/5 px-2 py-1 rounded-full">
-                            {users.length} total
-                        </span>
+                        <div className="relative w-full sm:w-64">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                            <input
+                                type="text"
+                                placeholder="Buscar por nome ou e-mail..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary/50"
+                            />
+                        </div>
                     </div>
 
                     {loadingUsers ? (
@@ -304,7 +326,7 @@ export const AdminPanel = () => {
                                 <div key={i} className="h-14 bg-white/3 rounded-lg animate-pulse" />
                             ))}
                         </div>
-                    ) : users.length === 0 ? (
+                    ) : filteredUsers.length === 0 ? (
                         <div className="py-10 text-center text-gray-600 text-sm">
                             Nenhum usuário encontrado.
                         </div>

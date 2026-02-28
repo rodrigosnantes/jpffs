@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
-import { Trophy, Medal, TrendingUp, Target, Handshake, AlertTriangle, Percent, CalendarRange } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Trophy, Medal, TrendingUp, Target, Handshake, AlertTriangle, Percent, CalendarRange, Search } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 interface Season { id: string; name: string; is_active: boolean; }
@@ -41,12 +42,20 @@ export const Leaderboard = () => {
     const { players, matches } = useStore();
     const [activeTab, setActiveTab] = useState<TabId>('classification');
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
+    const playersPerPage = 10;
+
     // ── Season filter ────────────────────────────────────────────────────────
     const [seasons, setSeasons] = useState<Season[]>([]);
     const [selectedSeason, setSelectedSeason] = useState('');
     const [seasonEvents, setSeasonEvents] = useState<{ match_id: string; player_id: string; assist_id: string | null; type: string }[]>([]);
     const [seasonMatchIds, setSeasonMatchIds] = useState<string[]>([]);
     const [loadingSeason, setLoadingSeason] = useState(false);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, activeTab, selectedSeason]);
 
     useEffect(() => {
         supabase.from('seasons').select('id,name,is_active').order('created_at', { ascending: false })
@@ -116,23 +125,45 @@ export const Leaderboard = () => {
     }, [players, finishedMatches, selectedSeason, seasonEvents]);
 
     // ── Sorted lists per tab ────────────────────────────────────────────────
-    const sorted = useMemo(() => {
+    const sortedAll = useMemo(() => {
         const copy = [...basePlayers];
+        let sorted;
         switch (activeTab) {
             case 'classification':
-                return copy.sort((a, b) => b.points - a.points || b.stats.wins - a.stats.wins || b.stats.goals - a.stats.goals);
+                sorted = copy.sort((a, b) => b.points - a.points || b.stats.wins - a.stats.wins || b.stats.goals - a.stats.goals);
+                break;
             case 'goals':
-                return copy.sort((a, b) => b.stats.goals - a.stats.goals || b.stats.assists - a.stats.assists);
+                sorted = copy.sort((a, b) => b.stats.goals - a.stats.goals || b.stats.assists - a.stats.assists);
+                break;
             case 'assists':
-                return copy.sort((a, b) => b.stats.assists - a.stats.assists || b.stats.goals - a.stats.goals);
+                sorted = copy.sort((a, b) => b.stats.assists - a.stats.assists || b.stats.goals - a.stats.goals);
+                break;
             case 'cards':
-                return copy.sort((a, b) => b.cards - a.cards);
+                sorted = copy.sort((a, b) => b.cards - a.cards);
+                break;
             case 'winrate':
-                return copy
+                sorted = copy
                     .filter(p => p.stats.matches_played > 0)
                     .sort((a, b) => b.winrate - a.winrate || b.stats.wins - a.stats.wins);
+                break;
+            default:
+                sorted = copy;
         }
+        return sorted.map((p, index) => ({ ...p, rank: index }));
     }, [basePlayers, activeTab]);
+
+    // ── Search & Pagination ─────────────────────────────────────────────────
+    const filteredPlayers = useMemo(() => {
+        if (!searchTerm) return sortedAll;
+        const term = searchTerm.toLowerCase();
+        return sortedAll.filter(p => p.name.toLowerCase().includes(term));
+    }, [sortedAll, searchTerm]);
+
+    const totalPages = Math.ceil(filteredPlayers.length / playersPerPage);
+    const currentPlayers = filteredPlayers.slice(
+        (currentPage - 1) * playersPerPage,
+        currentPage * playersPerPage
+    );
 
     // ── Last 5 results ───────────────────────────────────────────────────
     const getLast5 = (playerId: string): ('W' | 'D' | 'L')[] => {
@@ -195,7 +226,6 @@ export const Leaderboard = () => {
     };
 
     const activeCols = columnsByTab[activeTab];
-    const activeTabConfig = TABS.find(t => t.id === activeTab)!;
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
@@ -227,23 +257,37 @@ export const Leaderboard = () => {
                 )}
             </div>
 
-            {/* Tabs */}
-            <div className="flex flex-wrap gap-2">
-                {TABS.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={cn(
-                            'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all border',
-                            activeTab === tab.id
-                                ? `bg-white/10 border-white/20 text-white shadow-lg`
-                                : 'border-white/5 text-gray-500 hover:text-gray-300 hover:border-white/10 bg-white/3'
-                        )}
-                    >
-                        <span className={activeTab === tab.id ? tab.color : ''}>{tab.icon}</span>
-                        {tab.label}
-                    </button>
-                ))}
+            {/* Tabs & Search */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex flex-wrap gap-2">
+                    {TABS.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={cn(
+                                'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all border',
+                                activeTab === tab.id
+                                    ? `bg-white/10 border-white/20 text-white shadow-lg`
+                                    : 'border-white/5 text-gray-500 hover:text-gray-300 hover:border-white/10 bg-white/3'
+                            )}
+                        >
+                            <span className={activeTab === tab.id ? tab.color : ''}>{tab.icon}</span>
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Search */}
+                <div className="relative w-full sm:w-64 shrink-0">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                    <input
+                        type="text"
+                        placeholder="Buscar jogador..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary/50"
+                    />
+                </div>
             </div>
 
             {/* Table */}
@@ -260,39 +304,42 @@ export const Leaderboard = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {sorted.map((player, index) => (
-                                <tr key={player.id} className="hover:bg-white/5 transition-colors group">
-                                    {/* Rank */}
-                                    <td className="p-4 text-center">
-                                        <div className="flex justify-center">{getRankIcon(index)}</div>
-                                    </td>
-                                    {/* Player */}
-                                    <td className="p-4">
-                                        <Link to={`/players/${player.id}`}
-                                            className="flex items-center gap-3 hover:text-white transition-colors">
-                                            <div className={cn(
-                                                'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors shrink-0',
-                                                index === 0 ? 'bg-yellow-500/20 text-yellow-400 group-hover:bg-yellow-500 group-hover:text-background'
-                                                    : 'bg-white/10 text-primary group-hover:bg-primary group-hover:text-background'
-                                            )}>
-                                                {player.name.substring(0, 2).toUpperCase()}
-                                            </div>
-                                            <span className="font-medium text-gray-200 group-hover:text-white">
-                                                {player.name}
-                                            </span>
-                                            {index < 3 && (
-                                                <TrendingUp size={13} className="text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            )}
-                                        </Link>
-                                    </td>
-                                    {/* Dynamic columns */}
-                                    {activeCols.map(col => (
-                                        <td key={col.label} className={cn('p-4', col.className)}>
-                                            {col.cell(player, index)}
+                            {currentPlayers.map((player) => {
+                                const index = player.rank;
+                                return (
+                                    <tr key={player.id} className="hover:bg-white/5 transition-colors group">
+                                        {/* Rank */}
+                                        <td className="p-4 text-center">
+                                            <div className="flex justify-center">{getRankIcon(index)}</div>
                                         </td>
-                                    ))}
-                                </tr>
-                            ))}
+                                        {/* Player */}
+                                        <td className="p-4">
+                                            <Link to={`/jogadores/${player.id}`}
+                                                className="flex items-center gap-3 hover:text-white transition-colors">
+                                                <div className={cn(
+                                                    'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors shrink-0',
+                                                    index === 0 ? 'bg-yellow-500/20 text-yellow-400 group-hover:bg-yellow-500 group-hover:text-background'
+                                                        : 'bg-white/10 text-primary group-hover:bg-primary group-hover:text-background'
+                                                )}>
+                                                    {player.name.substring(0, 2).toUpperCase()}
+                                                </div>
+                                                <span className="font-medium text-gray-200 group-hover:text-white">
+                                                    {player.name}
+                                                </span>
+                                                {index < 3 && (
+                                                    <TrendingUp size={13} className="text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                )}
+                                            </Link>
+                                        </td>
+                                        {/* Dynamic columns */}
+                                        {activeCols.map(col => (
+                                            <td key={col.label} className={cn('p-4', col.className)}>
+                                                {col.cell(player, index)}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                )
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -300,6 +347,31 @@ export const Leaderboard = () => {
                     <p className="text-[10px] text-gray-600 px-4 py-2 border-t border-white/5">
                         * Total ponderado: amarelo = 1pt, vermelho = 2pts
                     </p>
+                )}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-4 py-3 border-t border-white/5">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="text-sm px-3 py-1.5 h-auto text-gray-400"
+                        >
+                            Anterior
+                        </Button>
+
+                        <span className="text-sm text-gray-500 font-medium">
+                            Página {currentPage} de {totalPages}
+                        </span>
+
+                        <Button
+                            variant="ghost"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="text-sm px-3 py-1.5 h-auto text-gray-400"
+                        >
+                            Próxima
+                        </Button>
+                    </div>
                 )}
             </Card>
         </div>

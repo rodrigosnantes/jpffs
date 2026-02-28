@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Plus, Trash2, Edit2, Shield, User, Lock, Mail, KeyRound, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Edit2, Shield, User, Lock, Mail, KeyRound, AlertCircle, CheckCircle, Search } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import type { Position, PlayerPlan } from '../types';
@@ -33,6 +33,28 @@ export const Players = () => {
     const [form, setForm] = useState(defaultForm());
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; msg: string } | null>(null);
+
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const playersPerPage = 10;
+
+    // Reset page on search change
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    // ── Pagination and Search filtering ────────────────────────────────────
+    const filteredPlayers = React.useMemo(() => {
+        if (!searchTerm) return players;
+        const term = searchTerm.toLowerCase();
+        return players.filter(p => p.name.toLowerCase().includes(term));
+    }, [players, searchTerm]);
+
+    const totalPages = Math.ceil(filteredPlayers.length / playersPerPage);
+    const currentPlayers = filteredPlayers.slice(
+        (currentPage - 1) * playersPerPage,
+        currentPage * playersPerPage
+    );
 
     // ── Create player (3 steps) ────────────────────────────────────────────
     const handleCreatePlayer = async (e: React.FormEvent) => {
@@ -109,18 +131,38 @@ export const Players = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold font-header text-primary">Jogadores</h1>
-                {isAdmin ? (
-                    <Button onClick={() => setIsModalOpen(true)}>
-                        <Plus size={20} />
-                        Novo Jogador
-                    </Button>
-                ) : (
-                    <span className="flex items-center gap-1.5 text-xs text-gray-500 border border-white/10 px-3 py-1.5 rounded-lg">
-                        <Lock size={12} /> Somente leitura
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <h1 className="text-3xl font-bold font-header text-primary">Jogadores</h1>
+                    <span className="text-xs text-gray-600 bg-white/5 px-2 py-1 rounded-full whitespace-nowrap hidden sm:inline-block">
+                        {filteredPlayers.length} total
                     </span>
-                )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                    {/* Search Field */}
+                    <div className="relative w-full sm:w-64 shrink-0">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                        <input
+                            type="text"
+                            placeholder="Buscar jogador..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary/50"
+                        />
+                    </div>
+
+                    {isAdmin ? (
+                        <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto shrink-0">
+                            <Plus size={20} />
+                            Novo Jogador
+                        </Button>
+                    ) : (
+                        <span className="flex items-center justify-center gap-1.5 text-xs text-gray-500 border border-white/10 px-3 py-2 rounded-lg w-full sm:w-auto shrink-0">
+                            <Lock size={12} /> Somente leitura
+                        </span>
+                    )}
+                </div>
             </div>
 
             <Card className="overflow-hidden p-0">
@@ -136,7 +178,13 @@ export const Players = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {players.map((player) => (
+                            {currentPlayers.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="p-8 text-center text-gray-500 text-sm">
+                                        Nenhum jogador encontrado.
+                                    </td>
+                                </tr>
+                            ) : currentPlayers.map((player) => (
                                 <tr key={player.id} className="hover:bg-white/5 transition-colors">
                                     <td className="p-4 font-medium">
                                         <div className="flex items-center gap-3 group/name">
@@ -206,6 +254,33 @@ export const Players = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-4 py-3 border-t border-white/5">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="text-sm px-3 py-1.5 h-auto text-gray-400"
+                        >
+                            Anterior
+                        </Button>
+
+                        <span className="text-sm text-gray-500 font-medium">
+                            Página {currentPage} de {totalPages}
+                        </span>
+
+                        <Button
+                            variant="ghost"
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="text-sm px-3 py-1.5 h-auto text-gray-400"
+                        >
+                            Próxima
+                        </Button>
+                    </div>
+                )}
             </Card>
 
             {/* ── Create Player Modal ─────────────────────────────────────── */}
