@@ -332,7 +332,7 @@ export const Profile = () => {
                                 required
                             />
 
-                            <Button type="submit" disabled={passwordSaving} className="w-full mt-2" variant="outline">
+                            <Button type="submit" disabled={passwordSaving} className="w-full mt-2" variant="secondary">
                                 <Lock size={18} className="mr-2" />
                                 {passwordSaving ? 'Atualizando...' : 'Atualizar Senha'}
                             </Button>
