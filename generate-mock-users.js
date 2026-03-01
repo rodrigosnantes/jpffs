@@ -1,20 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Setup Supabase Client
-// Replace with your project URL and your SERVICE_ROLE key
-// IMPORTANT: Use the SERVICE_ROLE key, not the anon key, to bypass RLS and create users safely.
 const supabaseUrl = 'https://tpvmbtbdercgyoeacslw.supabase.co';
 const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwdm1idGJkZXJjZ3lvZWFjc2x3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTQ1MjI0MiwiZXhwIjoyMDg3MDI4MjQyfQ.To66Eb-Whdxcvhw6ZpjJsBCZx5PlgoXCUdDK-Rz-4vk';
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const mockUsers = [
-    { name: 'Ricardinho', email: 'ricardinho@teste.com', position: 'Line', level: 3 },
-    { name: 'Gledson', email: 'gledson@teste.com', position: 'Line', level: 4 },
-    // { name: 'Marcos Souza', email: 'marcos.souza@teste.com', position: 'Goalkeeper', level: 5 },
-    // { name: 'Lucas Santos', email: 'lucas.santos@teste.com', position: 'Line', level: 2 },
-    // { name: 'Rafael Costa', email: 'rafael.costa@teste.com', position: 'Goalkeeper', level: 4 },
-    // { name: 'Felipe Melo', email: 'felipe.melo@teste.com', position: 'Line', level: 5 },
+    { name: 'Josue', email: 'Josue@teste.com', position: 'Line', level: 4 },
+    { name: 'Terixeira', email: 'Terixeira@teste.com', position: 'Line', level: 4 },
+    { name: 'Valmar', email: 'Valmar@teste.com', position: 'Goalkeeper', level: 5 },
+    { name: 'Marcelo Marques', email: 'Marcelo@teste.com', position: 'Line', level: 2 },
+    { name: 'Brabo Filho', email: 'Brabo@teste.com', position: 'Goalkeeper', level: 4 },
+    { name: 'Felipe Assis', email: 'FelipeAssis@teste.com', position: 'Line', level: 5 },
+    { name: 'Bostonildo', email: 'Bostonildo@teste.com', position: 'Line', level: 2 },
+    { name: 'Bostonildo Rafael', email: 'BostonildoR@teste.com', position: 'Line', level: 4 },
+    { name: 'josé', email: 'jose@teste.com', position: 'Line', level: 2 },
+    { name: 'Edenilson', email: 'edenilson@teste.com', position: 'Line', level: 3 },
 ];
 
 async function generateMockUsers() {

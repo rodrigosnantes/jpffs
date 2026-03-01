@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Shield, UserPlus, Users, Mail, Lock, CheckCircle, AlertCircle, Trash2, Crown, Search } from 'lucide-react';
+import { Shield, UserPlus, Users, Mail, Lock, CheckCircle, AlertCircle, Trash2, Crown, Search, Edit2, Save, X } from 'lucide-react';
 import type { PlayerPlan } from '../types';
 import { cn } from '../utils/cn';
 
@@ -45,6 +45,14 @@ export const AdminPanel = () => {
     });
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+    // Edit user state
+    const [editingUserId, setEditingUserId] = useState<string | null>(null);
+    const [editForm, setEditForm] = useState({
+        email: '',
+        role: 'user' as 'admin' | 'user'
+    });
+    const [updatingUser, setUpdatingUser] = useState(false);
 
     // ── Load existing users from profiles ─────────────────────────────────
     const loadUsers = async () => {
@@ -136,6 +144,49 @@ export const AdminPanel = () => {
         if (!confirm(`Excluir o usuário "${email}"? Esta ação remove apenas o perfil — para remover o acesso ao auth, faça pelo Supabase Dashboard.`)) return;
         await supabase.from('profiles').delete().eq('id', userId);
         loadUsers();
+    };
+
+    // ── Edit user ─────────────────────────────────────────────────────────
+    const handleEditClick = (u: AdminUser) => {
+        setEditingUserId(u.id);
+        setEditForm({ email: u.email, role: u.role as 'admin' | 'user' });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingUserId(null);
+    };
+
+    const handleUpdateUser = async (userId: string) => {
+        if (!editForm.email) return;
+        setUpdatingUser(true);
+
+        try {
+            // Se tiver que alterar o e-mail (Nota: alterar o email na auth só é possível via admin sdk no backend.
+            // Aqui estamos apenas atualizando no perfil do app (profiles table), o que mudará sua representação mas
+            // pode causar inconsistência de login se o admin não mudar no dashboard também, 
+            // Porém o usuário pediu para "editar o email ou auth".
+            const updates: { email?: string, role?: string } = {};
+            const originalUser = users.find(u => u.id === userId);
+
+            if (editForm.email !== originalUser?.email) {
+                updates.email = editForm.email;
+            }
+            if (editForm.role !== originalUser?.role) {
+                updates.role = editForm.role;
+            }
+
+            if (Object.keys(updates).length > 0) {
+                const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
+                if (error) throw error;
+            }
+
+            setEditingUserId(null);
+            loadUsers();
+        } catch (err: any) {
+            alert(err.message ?? 'Erro ao atualizar usuário');
+        } finally {
+            setUpdatingUser(false);
+        }
     };
 
     // ── Pagination & Search Logic ─────────────────────────────────────────
@@ -352,53 +403,109 @@ export const AdminPanel = () => {
                                         {(u.name ?? u.email).substring(0, 2).toUpperCase()}
                                     </div>
 
-                                    {/* Info */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-1.5">
-                                            <p className="text-sm font-semibold text-white truncate">
-                                                {u.name ?? u.email.split('@')[0]}
-                                            </p>
-                                            {u.id === user?.id && (
-                                                <span className="text-[9px] text-gray-500 bg-white/5 px-1.5 rounded-full">você</span>
-                                            )}
+                                    {/* Info Block -> Switches to Edit Inputs if modifying */}
+                                    {editingUserId === u.id ? (
+                                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                                            <input
+                                                type="email"
+                                                value={editForm.email}
+                                                onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                                                className="bg-white/5 border border-white/20 rounded px-2 py-1 text-sm text-white w-full sm:w-auto"
+                                                placeholder="Novo e-mail"
+                                            />
+                                            <select
+                                                value={editForm.role}
+                                                onChange={(e) => setEditForm(prev => ({ ...prev, role: e.target.value as 'admin' | 'user' }))}
+                                                className="bg-white/5 border border-white/20 rounded px-2 py-1 text-xs text-white uppercase font-bold"
+                                            >
+                                                <option value="user" className="bg-zinc-800">Membro</option>
+                                                <option value="admin" className="bg-zinc-800">Admin</option>
+                                            </select>
                                         </div>
-                                        <p className="text-xs text-gray-600 truncate">{u.email}</p>
-                                    </div>
+                                    ) : (
+                                        <>
+                                            {/* Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5">
+                                                    <p className="text-sm font-semibold text-white truncate">
+                                                        {u.name ?? u.email.split('@')[0]}
+                                                    </p>
+                                                    {u.id === user?.id && (
+                                                        <span className="text-[9px] text-gray-500 bg-white/5 px-1.5 rounded-full">você</span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-gray-600 truncate">{u.email}</p>
+                                            </div>
 
-                                    {/* Role badge + toggle */}
-                                    {u.id !== user?.id && (
-                                        <button
-                                            onClick={() => handleChangeRole(u.id, u.role === 'admin' ? 'user' : 'admin')}
-                                            title="Clique para alternar role"
-                                            className={cn(
-                                                'text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full border transition-all hover:opacity-80',
-                                                u.role === 'admin'
-                                                    ? 'bg-primary/20 text-primary border-primary/30'
-                                                    : 'bg-white/5 text-gray-500 border-white/10'
+                                            {/* Role badge + toggle (only if not editing) */}
+                                            {u.id !== user?.id && (
+                                                <button
+                                                    onClick={() => handleChangeRole(u.id, u.role === 'admin' ? 'user' : 'admin')}
+                                                    title="Clique para alternar role"
+                                                    className={cn(
+                                                        'text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full border transition-all hover:opacity-80 hidden sm:block',
+                                                        u.role === 'admin'
+                                                            ? 'bg-primary/20 text-primary border-primary/30'
+                                                            : 'bg-white/5 text-gray-500 border-white/10'
+                                                    )}
+                                                >
+                                                    {u.role === 'admin' ? '★ Admin' : 'Membro'}
+                                                </button>
                                             )}
-                                        >
-                                            {u.role === 'admin' ? '★ Admin' : 'Membro'}
-                                        </button>
-                                    )}
-                                    {u.id === user?.id && (
-                                        <span className={cn(
-                                            'text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full border',
-                                            'bg-primary/20 text-primary border-primary/30'
-                                        )}>
-                                            ★ Admin
-                                        </span>
+                                            {u.id === user?.id && (
+                                                <span className={cn(
+                                                    'text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full border hidden sm:block',
+                                                    'bg-primary/20 text-primary border-primary/30'
+                                                )}>
+                                                    ★ Admin
+                                                </span>
+                                            )}
+                                        </>
                                     )}
 
-                                    {/* Delete */}
-                                    {u.id !== user?.id && (
-                                        <button
-                                            onClick={() => handleDelete(u.id, u.email)}
-                                            className="p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                                            title="Remover perfil"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    )}
+                                    {/* Action Buttons */}
+                                    <div className="flex items-center gap-1">
+                                        {/* Edit Action */}
+                                        {u.id !== user?.id && editingUserId !== u.id && (
+                                            <button
+                                                onClick={() => handleEditClick(u)}
+                                                className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded transition-colors"
+                                                title="Editar usuário"
+                                            >
+                                                <Edit2 size={14} />
+                                            </button>
+                                        )}
+                                        {editingUserId === u.id && (
+                                            <>
+                                                <button
+                                                    onClick={() => handleUpdateUser(u.id)}
+                                                    disabled={updatingUser}
+                                                    className="p-1.5 text-green-400 hover:bg-green-500/10 rounded transition-colors"
+                                                    title="Salvar alterações"
+                                                >
+                                                    <Save size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={handleCancelEdit}
+                                                    className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                                                    title="Cancelar"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </>
+                                        )}
+
+                                        {/* Delete Action (hidden when editing to save space) */}
+                                        {u.id !== user?.id && editingUserId !== u.id && (
+                                            <button
+                                                onClick={() => handleDelete(u.id, u.email)}
+                                                className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                                                title="Remover perfil"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -431,7 +538,7 @@ export const AdminPanel = () => {
                         </div>
                     )}
                 </Card>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };

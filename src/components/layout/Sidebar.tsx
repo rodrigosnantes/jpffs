@@ -26,7 +26,7 @@ export const Sidebar = () => {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const { themeId, setTheme, themes } = useTheme();
     const [showThemes, setShowThemes] = useState(false);
-    const { isAdmin } = useAuthStore();
+    const { isAdmin, user, name } = useAuthStore();
 
     const navItems = [
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -171,14 +171,14 @@ export const Sidebar = () => {
                         )}
                     >
                         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-amber-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-primary/20">
-                            RO
+                            {name ? name.substring(0, 2).toUpperCase() : (user?.email ? user.email.substring(0, 2).toUpperCase() : 'U')}
                         </div>
                         <div className={cn(
                             "transition-all duration-300 overflow-hidden",
                             !isOpen ? "w-0 opacity-0" : "w-auto opacity-100"
                         )}>
                             <div className="flex items-center gap-1.5">
-                                <p className="text-sm font-bold text-white truncate">Rodrigo</p>
+                                <p className="text-sm font-bold text-white truncate">{name || user?.email?.split('@')[0] || 'Usuário'}</p>
                                 {isAdmin && (
                                     <span className="text-[9px] font-black uppercase tracking-wider bg-primary/20 text-primary border border-primary/30 px-1.5 py-0.5 rounded-full">
                                         Admin

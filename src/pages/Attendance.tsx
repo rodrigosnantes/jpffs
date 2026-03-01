@@ -44,17 +44,29 @@ export const Attendance = () => {
         const isConfirmed = confirmed.has(playerId);
 
         if (isConfirmed) {
-            await supabase
+            const { error } = await supabase
                 .from('attendance')
                 .delete()
                 .eq('player_id', playerId)
                 .eq('date', todayISO());
-            setConfirmed(prev => { const s = new Set(prev); s.delete(playerId); return s; });
+
+            if (error) {
+                console.error("Failed to delete attendance", error);
+                alert("Erro ao remover presença.");
+            } else {
+                setConfirmed(prev => { const s = new Set(prev); s.delete(playerId); return s; });
+            }
         } else {
-            await supabase
+            const { error } = await supabase
                 .from('attendance')
-                .upsert({ player_id: playerId, date: todayISO(), confirmed: true });
-            setConfirmed(prev => new Set([...prev, playerId]));
+                .upsert({ player_id: playerId, date: todayISO(), confirmed: true }, { onConflict: 'player_id,date' });
+
+            if (error) {
+                console.error("Failed to add attendance", error);
+                alert("Erro ao confirmar presença.");
+            } else {
+                setConfirmed(prev => new Set([...prev, playerId]));
+            }
         }
         setSaving(null);
     }, [confirmed]);
@@ -62,8 +74,14 @@ export const Attendance = () => {
     // ── Mark all / Clear all ───────────────────────────────────────────────
     const markAll = async () => {
         const rows = players.map(p => ({ player_id: p.id, date: todayISO(), confirmed: true }));
-        await supabase.from('attendance').upsert(rows);
-        setConfirmed(new Set(players.map(p => p.id)));
+        const { error } = await supabase.from('attendance').upsert(rows, { onConflict: 'player_id,date' });
+
+        if (error) {
+            console.error("Failed to mark all", error);
+            alert("Erro ao confirmar presença de todos: " + error.message);
+        } else {
+            setConfirmed(new Set(players.map(p => p.id)));
+        }
     };
 
     const clearAll = async () => {
