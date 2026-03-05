@@ -285,6 +285,40 @@ export const Profile = () => {
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             />
 
+                            <Input
+                                label="Apelido"
+                                value={formData.nickname}
+                                onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                            />
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <Input
+                                    label="Data de Nascimento"
+                                    type="date"
+                                    value={formData.birth_date}
+                                    onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                                />
+                                <Input
+                                    label="Idade"
+                                    type="number"
+                                    value={formData.age}
+                                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                                />
+                            </div>
+
+                            <Input
+                                label="Telefone"
+                                placeholder="(00) 00000-0000"
+                                value={formData.phone}
+                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            />
+
+                            <Input
+                                label="Time do Coração"
+                                value={formData.favorite_team}
+                                onChange={(e) => setFormData({ ...formData, favorite_team: e.target.value })}
+                            />
+
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-400">Posição Preferida</label>
                                 <div className="grid grid-cols-2 gap-3">

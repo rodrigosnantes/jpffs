@@ -15,6 +15,7 @@ interface AdminUser {
     email: string;
     name: string | null;
     role: string;
+    status: string;
     created_at: string;
 }
 
@@ -50,7 +51,8 @@ export const AdminPanel = () => {
     const [editingUserId, setEditingUserId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState({
         email: '',
-        role: 'user' as 'admin' | 'user'
+        role: 'user' as 'admin' | 'user',
+        status: 'ativo' as string
     });
     const [updatingUser, setUpdatingUser] = useState(false);
 
@@ -59,7 +61,7 @@ export const AdminPanel = () => {
         setLoadingUsers(true);
         const { data } = await supabase
             .from('profiles')
-            .select('id, email, name, role, created_at')
+            .select('id, email, name, role, status, created_at')
             .order('created_at', { ascending: false });
         setUsers((data ?? []) as AdminUser[]);
         setLoadingUsers(false);
@@ -149,7 +151,7 @@ export const AdminPanel = () => {
     // ── Edit user ─────────────────────────────────────────────────────────
     const handleEditClick = (u: AdminUser) => {
         setEditingUserId(u.id);
-        setEditForm({ email: u.email, role: u.role as 'admin' | 'user' });
+        setEditForm({ email: u.email, role: u.role as 'admin' | 'user', status: u.status || 'ativo' });
     };
 
     const handleCancelEdit = () => {
@@ -165,7 +167,7 @@ export const AdminPanel = () => {
             // Aqui estamos apenas atualizando no perfil do app (profiles table), o que mudará sua representação mas
             // pode causar inconsistência de login se o admin não mudar no dashboard também, 
             // Porém o usuário pediu para "editar o email ou auth".
-            const updates: { email?: string, role?: string } = {};
+            const updates: { email?: string, role?: string, status?: string } = {};
             const originalUser = users.find(u => u.id === userId);
 
             if (editForm.email !== originalUser?.email) {
@@ -173,6 +175,9 @@ export const AdminPanel = () => {
             }
             if (editForm.role !== originalUser?.role) {
                 updates.role = editForm.role;
+            }
+            if (editForm.status !== originalUser?.status) {
+                updates.status = editForm.status;
             }
 
             if (Object.keys(updates).length > 0) {
@@ -421,6 +426,14 @@ export const AdminPanel = () => {
                                                 <option value="user" className="bg-zinc-800">Membro</option>
                                                 <option value="admin" className="bg-zinc-800">Admin</option>
                                             </select>
+                                            <select
+                                                value={editForm.status}
+                                                onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
+                                                className="bg-white/5 border border-white/20 rounded px-2 py-1 text-xs text-white uppercase font-bold"
+                                            >
+                                                <option value="ativo" className="bg-zinc-800">Ativo</option>
+                                                <option value="inativo" className="bg-zinc-800">Inativo</option>
+                                            </select>
                                         </div>
                                     ) : (
                                         <>
@@ -432,6 +445,15 @@ export const AdminPanel = () => {
                                                     </p>
                                                     {u.id === user?.id && (
                                                         <span className="text-[9px] text-gray-500 bg-white/5 px-1.5 rounded-full">você</span>
+                                                    )}
+                                                    {u.status === 'inativo' ? (
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full border border-red-500/20">
+                                                            Inativo
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded-full border border-green-500/20">
+                                                            Ativo
+                                                        </span>
                                                     )}
                                                 </div>
                                                 <p className="text-xs text-gray-600 truncate">{u.email}</p>

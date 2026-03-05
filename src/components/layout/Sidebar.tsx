@@ -20,6 +20,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStore } from '../../store/useStore';
 
+import Logo from '../../assets/logo.png'
+
 export const Sidebar = () => {
     const { isSidebarOpen: isOpen, setSidebarOpen: setIsOpen } = useStore();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -71,7 +73,8 @@ export const Sidebar = () => {
                     <div className={cn("font-header font-bold text-primary transition-all overflow-hidden whitespace-nowrap",
                         isOpen ? "text-2xl" : "md:hidden" // Hide text when collapsed on desktop
                     )}>
-                        JPFFS
+                        <img src={Logo} alt="Logo" />
+                        {/* JPFFS */}
                     </div>
                     <button
                         onClick={() => setIsOpen(!isOpen)}

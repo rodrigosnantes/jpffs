@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/useAuthStore';
 import { Input } from '../components/ui/Input';
-import { Trophy, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import Logo from '../assets/logo.png'
+
 
 export const Login = () => {
     const navigate = useNavigate();
@@ -39,9 +41,10 @@ export const Login = () => {
             <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-secondary/10 rounded-full blur-[120px]" />
 
             <div className="w-full max-w-md p-8 relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+
                 <div className="flex flex-col items-center mb-8">
                     <div className="w-16 h-16 bg-gradient-to-br from-primary to-amber-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-primary/20 transform rotate-3">
-                        <Trophy className="text-white w-8 h-8" />
+                        <img src={Logo} alt="Logo" />
                     </div>
                     <h1 className="text-4xl font-header font-bold text-white mb-2">JPFFS Manager</h1>
                     <p className="text-gray-400 text-center">Gerencie suas peladas de forma profissional</p>
