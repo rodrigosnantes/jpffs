@@ -298,9 +298,9 @@ export const Leaderboard = () => {
             </div>
 
             {/* Table */}
-            <Card className="overflow-hidden p-0">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+            <Card className="overflow-hidden p-0 w-full max-w-full">
+                <div className="overflow-x-auto w-full">
+                    <table className="w-full text-left border-collapse min-w-[800px] whitespace-nowrap">
                         <thead className="bg-white/5 text-gray-400 text-xs uppercase tracking-wider border-b border-white/5">
                             <tr>
                                 <th className="p-4 w-14 text-center">Pos</th>

@@ -152,7 +152,7 @@ export const Players = () => {
                     </span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full sm:w-auto">
                     {/* Search Field */}
                     <div className="relative w-full sm:w-64 shrink-0">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -178,9 +178,9 @@ export const Players = () => {
                 </div>
             </div>
 
-            <Card className="overflow-hidden p-0">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+            <Card className="overflow-hidden p-0 w-full max-w-full">
+                <div className="overflow-x-auto w-full">
+                    <table className="w-full text-left min-w-[700px] whitespace-nowrap">
                         <thead className="bg-white/5 text-gray-400">
                             <tr>
                                 <th className="p-4 font-medium">Nome</th>

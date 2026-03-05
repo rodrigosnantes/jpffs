@@ -8,7 +8,6 @@ import {
     Calendar,
     ClipboardList,
     CalendarRange,
-    Settings,
     Menu,
     X,
     LogOut,
@@ -38,7 +37,6 @@ export const Sidebar = () => {
             { name: 'Chamada', path: '/attendance', icon: ClipboardList },
             { name: 'Sorteio', path: '/teams', icon: Shield },
             { name: 'Temporadas', path: '/seasons', icon: CalendarRange },
-            { name: 'Configurações', path: '/settings', icon: Settings },
             { name: 'Painel Admin', path: '/admin', icon: ShieldCheck },
         ] : []),
     ];
@@ -47,8 +45,6 @@ export const Sidebar = () => {
         await supabase.auth.signOut();
         window.location.href = '/login';
     };
-
-    // if (!user) return null; // Handled in Layout
 
     return (
         <>

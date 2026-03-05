@@ -17,12 +17,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="min-h-screen bg-background text-text flex">
             {user && <Sidebar />}
             <main className={cn(
-                "flex-1 transition-all duration-300 min-h-screen",
+                "flex-1 transition-all duration-300 min-h-screen overflow-x-hidden",
                 user && (isSidebarOpen ? "lg:pl-64" : "lg:pl-20")
             )}>
 
                 <div className={cn(
-                    "w-full",
+                    "w-full max-w-full",
                     user ? "p-4 lg:p-8" : "p-0"
                 )}>
                     {children}
