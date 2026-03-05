@@ -17,6 +17,12 @@ const defaultForm = () => ({
     name: '',
     email: '',
     password: '',
+    nickname: '',
+    birth_date: '',
+    phone: '',
+    age: '',
+    favorite_team: '',
+    status: 'active',
     position: 'Line' as Position,
     level: 3,
     plan: 'Amateur' as PlayerPlan,
@@ -93,6 +99,12 @@ export const Players = () => {
                 id: newUserId,
                 email: form.email,
                 name: form.name,
+                nickname: form.nickname,
+                birth_date: form.birth_date || null,
+                phone: form.phone,
+                age: form.age ? parseInt(form.age.toString()) : null,
+                favorite_team: form.favorite_team,
+                status: form.status,
                 role: 'user',
             });
 
@@ -120,6 +132,7 @@ export const Players = () => {
             setFeedback({ type: 'error', msg: err.message ?? 'Erro inesperado.' });
         } finally {
             setSubmitting(false);
+            handleClose();
         }
     };
 
@@ -284,7 +297,7 @@ export const Players = () => {
             </Card>
 
             {/* ── Create Player Modal ─────────────────────────────────────── */}
-            <Modal isOpen={isModalOpen} onClose={handleClose} title="Novo Jogador">
+            <Modal isOpen={isModalOpen} onClose={handleClose} title="Novo Jogador" className="max-w-2xl">
                 <form onSubmit={handleCreatePlayer} className="space-y-5">
 
                     {/* ── Player info ─────────────────────────────── */}
@@ -292,14 +305,81 @@ export const Players = () => {
                         <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Dados do jogador</p>
                     </div>
 
-                    <Input
-                        label="Nome"
-                        placeholder="Ex: Rodrigo Nantes"
-                        autoFocus
-                        required
-                        value={form.name}
-                        onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    />
+                    <div className="grid grid-cols-3 gap-4">
+                        <Input
+                            label="Nome"
+                            placeholder="Ex: Rodrigo Nantes"
+                            autoFocus
+                            required
+                            value={form.name}
+                            onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        />
+
+                        <Input
+                            label="Apelido"
+                            placeholder="Ex: Digão"
+                            value={form.nickname}
+                            onChange={(e) => setForm({ ...form, nickname: e.target.value })}
+                        />
+
+                        <Input
+                            label="Data de Nascimento"
+                            type="date"
+                            value={form.birth_date}
+                            onChange={(e) => setForm({ ...form, birth_date: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                        <Input
+                            label="Idade"
+                            type="number"
+                            placeholder="Ex: 30"
+                            value={form.age}
+                            onChange={(e) => setForm({ ...form, age: e.target.value })}
+                        />
+                        <Input
+                            label="Telefone"
+                            type="tel"
+                            placeholder="(11) 99999-9999"
+                            value={form.phone}
+                            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                        />
+                        <Input
+                            label="Time do Coração"
+                            placeholder="Ex: São Paulo"
+                            value={form.favorite_team}
+                            onChange={(e) => setForm({ ...form, favorite_team: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-gray-400">Situação do Jogador</label>
+                        <div className="flex items-center gap-4 mt-2">
+                            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300 hover:text-white transition-colors">
+                                <input
+                                    type="radio"
+                                    name="status"
+                                    value="active"
+                                    checked={form.status === 'active'}
+                                    onChange={(e) => setForm({ ...form, status: e.target.value })}
+                                    className="accent-primary w-4 h-4 cursor-pointer"
+                                />
+                                Ativo
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300 hover:text-white transition-colors">
+                                <input
+                                    type="radio"
+                                    name="status"
+                                    value="inactive"
+                                    checked={form.status === 'inactive'}
+                                    onChange={(e) => setForm({ ...form, status: e.target.value })}
+                                    className="accent-primary w-4 h-4 cursor-pointer"
+                                />
+                                Inativo
+                            </label>
+                        </div>
+                    </div>
 
                     {/* Position */}
                     <div className="space-y-1.5">
@@ -370,8 +450,8 @@ export const Players = () => {
                     <div className="border-t border-white/5 pt-1">
                         <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-4">Acesso ao sistema</p>
 
-                        <div className="space-y-3">
-                            <div className="space-y-1.5">
+                        <div className="flex items-center gap-4">
+                            <div className='w-1/2'>
                                 <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
                                     <Mail size={12} /> E-mail *
                                 </label>
@@ -384,7 +464,7 @@ export const Players = () => {
                                 />
                             </div>
 
-                            <div className="space-y-1.5">
+                            <div className='w-1/2'>
                                 <label className="text-sm font-medium text-gray-400 flex items-center gap-1.5">
                                     <KeyRound size={12} /> Senha temporária *
                                 </label>

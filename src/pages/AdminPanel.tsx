@@ -380,6 +380,7 @@ export const AdminPanel = () => {
                                             {u.role === 'admin' ? '★ Admin' : 'Membro'}
                                         </button>
                                     )}
+
                                     {u.id === user?.id && (
                                         <span className={cn(
                                             'text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full border',

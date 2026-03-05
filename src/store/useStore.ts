@@ -125,6 +125,15 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     deletePlayer: async (id) => {
+        // Fetch the profile_id to also delete from the profiles table
+        const { data: player } = await supabase
+            .from('players')
+            .select('profile_id')
+            .eq('id', id)
+            .single();
+
+        const profileId = player?.profile_id;
+
         const { error } = await supabase
             .from('players')
             .delete()
@@ -133,6 +142,18 @@ export const useStore = create<AppState>((set, get) => ({
         if (error) {
             console.error('Error deleting player:', error);
             return;
+        }
+
+        // Delete the profile if a profile_id was associated with this player
+        if (profileId) {
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .delete()
+                .eq('id', profileId);
+
+            if (profileError) {
+                console.error('Error deleting profile:', profileError);
+            }
         }
 
         set((state) => ({

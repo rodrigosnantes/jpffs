@@ -33,6 +33,11 @@ export const Profile = () => {
     const [formData, setFormData] = useState({
         name: '',
         position: 'Line' as 'Goalkeeper' | 'Line',
+        nickname: '',
+        birth_date: '',
+        phone: '',
+        age: '',
+        favorite_team: '',
     });
 
     const [saving, setSaving] = useState(false);
@@ -58,13 +63,32 @@ export const Profile = () => {
             .eq('profile_id', userId)
             .limit(1);
 
+        const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('nickname, birth_date, phone, age, favorite_team')
+            .eq('id', userId)
+            .single();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+            console.error('Profile extra data fetch error:', profileError);
+        }
+
         if (error) {
             console.error('Profile fetch error:', error);
             setFetchError(`[${error.code}] ${error.message}`);
             setPlayer(null);
         } else if (data && data.length > 0) {
             setPlayer(data[0] as Player);
-            setFormData({ name: data[0].name, position: data[0].position });
+
+            setFormData({
+                name: data[0].name,
+                position: data[0].position,
+                nickname: profileData?.nickname || '',
+                birth_date: profileData?.birth_date || '',
+                phone: profileData?.phone || '',
+                age: profileData?.age ? profileData.age.toString() : '',
+                favorite_team: profileData?.favorite_team || '',
+            });
         } else {
             setPlayer(null);
         }
@@ -87,7 +111,14 @@ export const Profile = () => {
 
         await supabase
             .from('profiles')
-            .update({ name: formData.name })
+            .update({
+                name: formData.name,
+                nickname: formData.nickname,
+                birth_date: formData.birth_date || null,
+                phone: formData.phone,
+                age: formData.age ? parseInt(formData.age.toString()) : null,
+                favorite_team: formData.favorite_team,
+            })
             .eq('id', user.id);
 
         setPlayer(prev => prev ? { ...prev, name: formData.name, position: formData.position } : null);
@@ -213,6 +244,44 @@ export const Profile = () => {
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         />
+                        <Input
+                            label="Apelido"
+                            placeholder="Ex: Digão"
+                            value={formData.nickname}
+                            onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                        />
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input
+                                label="Data de Nascimento"
+                                type="date"
+                                value={formData.birth_date}
+                                onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                            />
+                            <Input
+                                label="Idade"
+                                type="number"
+                                placeholder="Ex: 30"
+                                value={formData.age}
+                                onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <Input
+                                label="Telefone"
+                                type="tel"
+                                placeholder="(11) 99999-9999"
+                                value={formData.phone}
+                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            />
+                            <Input
+                                label="Time do Coração"
+                                placeholder="Ex: São Paulo"
+                                value={formData.favorite_team}
+                                onChange={(e) => setFormData({ ...formData, favorite_team: e.target.value })}
+                            />
+                        </div>
 
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-400">Posição Preferida</label>
