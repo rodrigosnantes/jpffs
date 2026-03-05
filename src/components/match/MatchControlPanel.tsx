@@ -6,10 +6,16 @@ import { Button } from '../ui/Button';
 import { Play, Square, Goal, ShieldAlert, Flag, ShieldBan, Star, RefreshCw, Lock } from 'lucide-react';
 import { EventModal } from './EventModal';
 import type { EventType } from '../../types';
+import type { Team } from '../../utils/teamSorter';
 import { cn } from '../../utils/cn';
 
-export const MatchControlPanel = () => {
-    const { currentMatch, generatedTeams, players, lastMVP, startMatch, pauseMatch, resumeMatch, endMatch, addEvent, resetMatch, clearMVP } = useStore();
+interface MatchControlProps {
+    teamA?: Team;
+    teamB?: Team;
+}
+
+export const MatchControlPanel = ({ teamA, teamB }: MatchControlProps) => {
+    const { currentMatch, players, lastMVP, startMatch, pauseMatch, resumeMatch, endMatch, addEvent, resetMatch, clearMVP } = useStore();
     const { isAdmin } = useAuthStore();
     const [modalOpen, setModalOpen] = useState(false);
     const [activeTeam, setActiveTeam] = useState<'A' | 'B' | null>(null);
@@ -50,7 +56,15 @@ export const MatchControlPanel = () => {
         return () => clearInterval(interval);
     }, [currentMatch.isActive, currentMatch.startTime, currentMatch.totalElapsedTime]);
 
-    if (!generatedTeams) return null;
+    // Make sure we have valid teams either from props (for new match) 
+    // or from current match state (if match is live)
+    const activeTeamA = currentMatch.isActive ? { id: currentMatch.teamAId, name: 'Time A', players: currentMatch.teamAPlayers || [], totalLevel: 0 } as Team : teamA;
+    const activeTeamB = currentMatch.isActive ? { id: currentMatch.teamBId, name: 'Time B', players: currentMatch.teamBPlayers || [], totalLevel: 0 } as Team : teamB;
+
+    if (!activeTeamA || !activeTeamB) return null;
+
+    const overlappingPlayers = activeTeamA.players.filter(pA => activeTeamB.players.some(pB => pB.id === pA.id));
+    const hasOverlap = !currentMatch.isActive && overlappingPlayers.length > 0;
 
     const handleEventClick = (team: 'A' | 'B', type: EventType) => {
         setActiveTeam(team);
@@ -68,8 +82,8 @@ export const MatchControlPanel = () => {
     };
 
     const getTeamPlayers = (team: 'A' | 'B') => {
-        if (team === 'A') return generatedTeams.teamA;
-        return generatedTeams.teamB;
+        if (team === 'A') return activeTeamA.players;
+        return activeTeamB.players;
     };
 
     const getPlayerName = (id: string) => {
@@ -135,15 +149,33 @@ export const MatchControlPanel = () => {
                     </div>
                 </div>
             )}
+
+            {hasOverlap && (
+                <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-4 rounded-xl flex items-center gap-3 animate-in fade-in zoom-in-95 duration-300">
+                    <ShieldAlert size={24} className="text-red-400 shrink-0" />
+                    <div>
+                        <p className="text-sm font-bold">Atenção: Jogadores duplicados!</p>
+                        <p className="text-xs text-red-300 mt-1">
+                            Os seguintes jogadores estão escalados em ambos os times: <strong>{overlappingPlayers.map(p => p.name).join(', ')}</strong>.
+                            Você não pode iniciar a partida até resolver essa duplicidade.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold font-header text-primary">Painel da Partida</h2>
                 <div className="flex gap-3 items-center">
                     {isAdmin ? (
                         !currentMatch.isActive && currentMatch.totalElapsedTime === 0 ? (
-                            <Button onClick={async () => {
-                                const res = await startMatch();
+                            <Button disabled={hasOverlap} onClick={async () => {
+                                if (hasOverlap) {
+                                    alert("Não é possível iniciar a partida: há jogadores que estão em ambos os times.");
+                                    return;
+                                }
+                                const res = await startMatch(activeTeamA, activeTeamB);
                                 if (res?.error) alert(res.error);
-                            }} className="bg-green-600 hover:bg-green-700 text-white">
+                            }} className={cn("bg-green-600 hover:bg-green-700 text-white", hasOverlap && "opacity-50 cursor-not-allowed")}>
                                 <Play size={20} className="mr-2" /> Iniciar Partida
                             </Button>
                         ) : (
@@ -175,7 +207,7 @@ export const MatchControlPanel = () => {
                 <div className="flex items-center justify-between px-4 py-2">
                     {/* Team A */}
                     <div className="text-center flex-1">
-                        <h3 className="text-2xl font-bold text-yellow-500 mb-2">Time Amarelo</h3>
+                        <h3 className="text-2xl font-bold text-yellow-500 mb-2">{activeTeamA.name}</h3>
                         <div className="text-6xl font-header font-bold">{currentMatch.teamAScore}</div>
                     </div>
 
@@ -199,7 +231,7 @@ export const MatchControlPanel = () => {
 
                     {/* Team B */}
                     <div className="text-center flex-1">
-                        <h3 className="text-2xl font-bold text-blue-500 mb-2">Time Azul</h3>
+                        <h3 className="text-2xl font-bold text-blue-500 mb-2">{activeTeamB.name}</h3>
                         <div className="text-6xl font-header font-bold">{currentMatch.teamBScore}</div>
                     </div>
                 </div>
@@ -335,7 +367,7 @@ export const MatchControlPanel = () => {
             <EventModal
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
-                teamName={activeTeam === 'A' ? 'Time Amarelo' : 'Time Azul'}
+                teamName={activeTeam === 'A' ? activeTeamA.name : activeTeamB.name}
                 players={activeTeam ? getTeamPlayers(activeTeam) : []}
                 eventType={eventType}
                 onConfirm={handleConfirmEvent}

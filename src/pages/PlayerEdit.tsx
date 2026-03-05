@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -56,9 +57,15 @@ const CustomBarTooltip = ({ active, payload, label }: any) => {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const PlayerEdit = () => {
+    const { isAdmin } = useAuthStore();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { players, matches, updatePlayer, deletePlayer } = useStore();
+
+    // Guard: redirect non-admins
+    if (!isAdmin) {
+        return <div className="p-8 text-center text-red-500 font-bold">Acesso restrito a Administradores.</div>;
+    }
 
     const player = players.find(p => p.id === id);
 

@@ -9,6 +9,7 @@ export type UserRole = 'admin' | 'user';
 interface AuthState {
     user: User | null;
     role: UserRole | null;
+    name: string | null;
     isLoading: boolean;
     isAdmin: boolean;
     initialize: () => void;
@@ -22,6 +23,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     role: null,
+    name: null,
     isLoading: true,
     isAdmin: false,
 
@@ -30,7 +32,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         try {
             const { data } = await supabase
                 .from('profiles')
-                .select('role')
+                .select('role, name')
                 .eq('id', userId)
                 .maybeSingle();
 
@@ -42,15 +44,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     email: user?.email ?? '',
                     role: 'user',
                 });
-                set({ role: 'user', isAdmin: false });
+                set({ role: 'user', name: null, isAdmin: false });
                 return;
             }
 
             const role = (data.role ?? 'user') as UserRole;
-            set({ role, isAdmin: role === 'admin' });
+            const name = data.name ?? null;
+            set({ role, name, isAdmin: role === 'admin' });
         } catch {
             // If profiles table is inaccessible, default safely to 'user'
-            set({ role: 'user', isAdmin: false });
+            set({ role: 'user', name: null, isAdmin: false });
         }
     },
 
@@ -72,7 +75,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 }
             } else {
                 lastUserId = null;
-                set({ role: null, isAdmin: false });
+                set({ role: null, name: null, isAdmin: false });
             }
         });
     },
@@ -86,7 +89,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     signOut: async () => {
         const { error } = await supabase.auth.signOut();
-        set({ user: null, role: null, isAdmin: false });
+        set({ user: null, role: null, name: null, isAdmin: false });
         return { error };
     },
 }));

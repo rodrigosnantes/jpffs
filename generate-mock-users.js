@@ -1,8 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Setup Supabase Client
-// Replace with your project URL and your SERVICE_ROLE key
-// IMPORTANT: Use the SERVICE_ROLE key, not the anon key, to bypass RLS and create users safely.
 const supabaseUrl = 'https://tpvmbtbdercgyoeacslw.supabase.co';
 const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwdm1idGJkZXJjZ3lvZWFjc2x3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTQ1MjI0MiwiZXhwIjoyMDg3MDI4MjQyfQ.To66Eb-Whdxcvhw6ZpjJsBCZx5PlgoXCUdDK-Rz-4vk';
 

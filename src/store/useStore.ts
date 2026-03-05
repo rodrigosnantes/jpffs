@@ -1,15 +1,16 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import type { Player, Match, LiveMatchState, MatchEvent } from '../types';
+import type { Team } from '../utils/teamSorter';
 
 interface AppState {
     players: Player[];
     matches: Match[];
-    generatedTeams: { teamA: Player[], teamB: Player[] } | null;
+    generatedTeams: { teams: Team[], bench: Player[] } | null;
     lastMVP: { id: string; name: string; goals: number; assists: number; team: 'A' | 'B' } | null;
 
     // Live Match State
-    currentMatch: LiveMatchState;
+    currentMatch: LiveMatchState & { teamAId?: string; teamBId?: string; teamAPlayers?: Player[]; teamBPlayers?: Player[] };
 
     // UI State
     isSidebarOpen: boolean;
@@ -21,10 +22,10 @@ interface AppState {
     addPlayer: (player: Omit<Player, 'id' | 'stats' | 'attributes'>) => Promise<void>;
     updatePlayer: (id: string, updates: Partial<Player>) => Promise<void>;
     deletePlayer: (id: string) => Promise<void>;
-    setGeneratedTeams: (teams: { teamA: Player[], teamB: Player[] }) => void;
+    setGeneratedTeams: (teamsData: { teams: Team[], bench: Player[] } | null) => void;
 
     // Match Actions
-    startMatch: () => Promise<{ error?: string }>;
+    startMatch: (teamAInfo: Team, teamBInfo: Team) => Promise<{ error?: string }>;
     pauseMatch: () => void;
     resumeMatch: () => void;
     endMatch: () => void;
@@ -161,13 +162,10 @@ export const useStore = create<AppState>((set, get) => ({
         }));
     },
 
-    setGeneratedTeams: (teams) => set({ generatedTeams: teams }),
+    setGeneratedTeams: (teamsData) => set({ generatedTeams: teamsData }),
 
     // Match Actions Implementation
-    startMatch: async () => {
-        const { generatedTeams } = get();
-        if (!generatedTeams) return { error: 'Times não gerados' };
-
+    startMatch: async (teamAInfo, teamBInfo) => {
         // Fetch active season (if any)
         const { data: seasonData } = await supabase
             .from('seasons')
@@ -188,8 +186,8 @@ export const useStore = create<AppState>((set, get) => ({
             status: 'live',
             team_a_score: 0,
             team_b_score: 0,
-            team_a_players: generatedTeams.teamA.map(p => p.id),
-            team_b_players: generatedTeams.teamB.map(p => p.id),
+            team_a_players: teamAInfo.players.map(p => p.id),
+            team_b_players: teamBInfo.players.map(p => p.id),
             duration: 600,
             season_id: seasonData?.id ?? null,
         };
@@ -214,7 +212,11 @@ export const useStore = create<AppState>((set, get) => ({
                 totalElapsedTime: 0,
                 teamAScore: 0,
                 teamBScore: 0,
-                events: []
+                events: [],
+                teamAId: teamAInfo.id,
+                teamBId: teamBInfo.id,
+                teamAPlayers: teamAInfo.players,
+                teamBPlayers: teamBInfo.players
             },
             matches: [data as Match, ...state.matches] // Optimistic update or reload?
         }));
@@ -248,10 +250,10 @@ export const useStore = create<AppState>((set, get) => ({
 
     endMatch: async () => {
         const state = get();
-        const { teamAScore, teamBScore, events, id } = state.currentMatch;
+        const { teamAScore, teamBScore, events, id, teamAPlayers, teamBPlayers } = state.currentMatch;
         const generatedTeams = state.generatedTeams;
 
-        if (!generatedTeams || !id) return;
+        if (!generatedTeams || !id || !teamAPlayers || !teamBPlayers) return;
 
         // 1. Update Match in DB
         const { error: matchError } = await supabase
@@ -271,11 +273,11 @@ export const useStore = create<AppState>((set, get) => ({
         const teamAWin = teamAScore > teamBScore;
         const teamBWin = teamBScore > teamAScore;
 
-        const allPlayers = [...generatedTeams.teamA, ...generatedTeams.teamB];
+        const allPlayers = [...teamAPlayers, ...teamBPlayers];
 
         for (const player of allPlayers) {
-            const inTeamA = generatedTeams.teamA.some(p => p.id === player.id);
-            const inTeamB = generatedTeams.teamB.some(p => p.id === player.id);
+            const inTeamA = teamAPlayers.some(p => p.id === player.id);
+            const inTeamB = teamBPlayers.some(p => p.id === player.id);
 
             // Calculate new stats
             const playerEvents = events.filter(e => e.playerId === player.id);
@@ -309,11 +311,11 @@ export const useStore = create<AppState>((set, get) => ({
         }
 
         // ── Calculate MVP before reset ─────────────────────────────────────────
-        const allForMVP = [...generatedTeams.teamA, ...generatedTeams.teamB];
+        const allForMVP = [...teamAPlayers, ...teamBPlayers];
         const mvpScores = allForMVP.map(p => {
             const goals = events.filter(e => e.playerId === p.id && e.type === 'Goal').length;
             const assists = events.filter(e => e.assistId === p.id).length;
-            const team: 'A' | 'B' = generatedTeams.teamA.some(t => t.id === p.id) ? 'A' : 'B';
+            const team: 'A' | 'B' = teamAPlayers.some(t => t.id === p.id) ? 'A' : 'B';
             return { id: p.id, name: p.name, goals, assists, score: goals * 2 + assists, team };
         }).filter(p => p.score > 0).sort((a, b) => b.score - a.score);
         const mvp = mvpScores[0] ?? null;
@@ -328,7 +330,11 @@ export const useStore = create<AppState>((set, get) => ({
                 totalElapsedTime: 0,
                 teamAScore: 0,
                 teamBScore: 0,
-                events: []
+                events: [],
+                teamAId: undefined,
+                teamBId: undefined,
+                teamAPlayers: undefined,
+                teamBPlayers: undefined
             }
         }));
 
@@ -403,7 +409,11 @@ export const useStore = create<AppState>((set, get) => ({
             totalElapsedTime: 0,
             teamAScore: 0,
             teamBScore: 0,
-            events: []
+            events: [],
+            teamAId: undefined,
+            teamBId: undefined,
+            teamAPlayers: undefined,
+            teamBPlayers: undefined
         }
     })
 

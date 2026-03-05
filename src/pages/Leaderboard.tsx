@@ -59,7 +59,14 @@ export const Leaderboard = () => {
 
     useEffect(() => {
         supabase.from('seasons').select('id,name,is_active').order('created_at', { ascending: false })
-            .then(({ data }) => setSeasons((data ?? []) as Season[]));
+            .then(({ data }) => {
+                const fetchedSeasons = (data ?? []) as Season[];
+                setSeasons(fetchedSeasons);
+                const active = fetchedSeasons.find(s => s.is_active);
+                if (active) {
+                    setSelectedSeason(active.id);
+                }
+            });
     }, []);
 
     useEffect(() => {
