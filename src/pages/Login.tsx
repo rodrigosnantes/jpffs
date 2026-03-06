@@ -4,7 +4,7 @@ import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/useAuthStore';
 import { Input } from '../components/ui/Input';
 import { ArrowRight } from 'lucide-react';
-import Logo from '../assets/logo.png'
+import Logo from '../assets/Logo.png'
 
 
 export const Login = () => {

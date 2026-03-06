@@ -20,7 +20,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStore } from '../../store/useStore';
 
-import Logo from '../../assets/logo.png'
+import Logo from '../../assets/Logo.png'
 
 export const Sidebar = () => {
     const { isSidebarOpen: isOpen, setSidebarOpen: setIsOpen } = useStore();
