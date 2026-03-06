@@ -165,7 +165,7 @@ export const Teams = () => {
                         <div key={p.id} className="flex items-center justify-between p-2 rounded bg-white/5">
                             <div className="flex items-center gap-2">
                                 {p.position === 'Goalkeeper' && <Shield size={14} className="text-yellow-500" />}
-                                <span className="font-medium">{p.name}</span>
+                                <span className="font-medium">{p.nickname || p.name}</span>
                             </div>
                             <div className="flex gap-0.5">
                                 {[...Array(p.level)].map((_, i) => (
@@ -198,7 +198,7 @@ export const Teams = () => {
                         <div key={p.id} className="flex items-center justify-between p-2 rounded bg-white/5">
                             <div className="flex items-center gap-2 text-gray-400">
                                 {p.position === 'Goalkeeper' && <Shield size={14} className="text-gray-500" />}
-                                <span className="font-medium">{p.name}</span>
+                                <span className="font-medium">{p.nickname || p.name}</span>
                             </div>
                         </div>
                     ))}
@@ -266,7 +266,7 @@ export const Teams = () => {
                                                     "w-2 h-2 rounded-full",
                                                     player.position === 'Goalkeeper' ? "bg-yellow-500" : "bg-blue-400"
                                                 )} />
-                                                <span className="font-medium">{player.name}</span>
+                                                <span className="font-medium">{player.nickname || player.name}</span>
                                             </div>
                                             <div className="text-xs font-mono bg-black/20 px-1.5 py-0.5 rounded">
                                                 Lvl {player.level}
@@ -382,7 +382,7 @@ export const Teams = () => {
                                                         player.position === 'Goalkeeper' ? "bg-yellow-500" : "bg-blue-400",
                                                         isSelected && "shadow-glow shadow-primary"
                                                     )} />
-                                                    <span className="font-medium text-sm">{player.name}</span>
+                                                    <span className="font-medium text-sm">{player.nickname || player.name}</span>
                                                     {isInBench && <span className="text-[9px] bg-red-500/20 text-red-300 px-1 py-0.5 rounded">Banco</span>}
                                                 </div>
                                                 <div className="text-[10px] font-mono bg-black/20 px-1.5 py-0.5 rounded">
@@ -409,7 +409,7 @@ export const Teams = () => {
                                             <div key={p.id} className="flex items-center justify-between p-2 rounded bg-primary/10 border border-primary/20">
                                                 <div className="flex items-center gap-2">
                                                     {p.position === 'Goalkeeper' && <Shield size={14} className="text-yellow-500" />}
-                                                    <span className="font-medium text-white">{p.name}</span>
+                                                    <span className="font-medium text-white">{p.nickname || p.name}</span>
                                                 </div>
                                                 <button
                                                     onClick={() => handleToggleManualPlayer(p)}

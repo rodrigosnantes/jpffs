@@ -16,6 +16,7 @@ export interface PlayerStats {
 export interface Player {
     id: string;
     name: string;
+    nickname?: string;
     photo_url?: string;
     position: Position;
     level: number; // 1 to 5

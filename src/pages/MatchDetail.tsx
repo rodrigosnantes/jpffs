@@ -69,8 +69,10 @@ export const MatchDetail = () => {
     const getPlayer = (pid: string | null) =>
         pid ? players.find(p => p.id === pid) : null;
 
-    const getPlayerName = (pid: string | null, fallback = '?') =>
-        getPlayer(pid)?.name ?? fallback;
+    const getPlayerName = (pid: string | null, fallback = '?') => {
+        const p = getPlayer(pid);
+        return p ? (p.nickname || p.name) : fallback;
+    };
 
     // ── MVP calculation ────────────────────────────────────────────────────
     const mvp: PlayerMVP | null = (() => {
@@ -284,7 +286,7 @@ export const MatchDetail = () => {
                                             <Link to={`/players/${pid}`}
                                                 className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
                                                 <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', dot)} />
-                                                {p?.name ?? '?'}
+                                                {p ? (p.nickname || p.name) : '?'}
                                                 {p?.position === 'Goalkeeper' && (
                                                     <Shield size={11} className="text-yellow-500 opacity-60" />
                                                 )}

@@ -163,7 +163,7 @@ export const Leaderboard = () => {
     const filteredPlayers = useMemo(() => {
         if (!searchTerm) return sortedAll;
         const term = searchTerm.toLowerCase();
-        return sortedAll.filter(p => p.name.toLowerCase().includes(term));
+        return sortedAll.filter(p => (p.nickname || p.name).toLowerCase().includes(term));
     }, [sortedAll, searchTerm]);
 
     const totalPages = Math.ceil(filteredPlayers.length / playersPerPage);
@@ -328,11 +328,16 @@ export const Leaderboard = () => {
                                                     index === 0 ? 'bg-yellow-500/20 text-yellow-400 group-hover:bg-yellow-500 group-hover:text-background'
                                                         : 'bg-white/10 text-primary group-hover:bg-primary group-hover:text-background'
                                                 )}>
-                                                    {player.name.substring(0, 2).toUpperCase()}
+                                                    {(player.nickname || player.name).substring(0, 2).toUpperCase()}
                                                 </div>
-                                                <span className="font-medium text-gray-200 group-hover:text-white">
-                                                    {player.name}
-                                                </span>
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-gray-200 group-hover:text-white">
+                                                        {player.nickname || player.name}
+                                                    </span>
+                                                    {player.nickname && (
+                                                        <span className="text-xs text-gray-500">{player.name}</span>
+                                                    )}
+                                                </div>
                                                 {index < 3 && (
                                                     <TrendingUp size={13} className="text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 )}

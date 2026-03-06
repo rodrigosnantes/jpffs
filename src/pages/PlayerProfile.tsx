@@ -189,7 +189,7 @@ export const PlayerProfile = () => {
                                         ? 'bg-yellow-500/15 border-yellow-500/40 text-yellow-300'
                                         : 'bg-primary/15 border-primary/40 text-primary'
                         )}>
-                            {player.name.substring(0, 2).toUpperCase()}
+                            {(player.nickname || player.name).substring(0, 2).toUpperCase()}
                         </div>
 
                         {/* Plan Badge */}
@@ -207,7 +207,7 @@ export const PlayerProfile = () => {
 
                     {/* Name + meta */}
                     <div className="flex-1 text-center sm:text-left">
-                        <h1 className="text-3xl font-black text-white">{player.name}</h1>
+                        <h1 className="text-3xl font-black text-white">{player.nickname || player.name}</h1>
                         <div className="flex flex-wrap justify-center sm:justify-start items-center gap-3 mt-2">
                             <span className={cn(
                                 'text-xs font-bold px-2.5 py-1 rounded-full border',

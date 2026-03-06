@@ -205,12 +205,12 @@ export const Attendance = () => {
                                         ? 'bg-green-500/20 border-green-500/40 text-green-300'
                                         : 'bg-white/5 border-white/10 text-gray-500'
                                 )}>
-                                    {player.name.substring(0, 2).toUpperCase()}
+                                    {(player.nickname || player.name).substring(0, 2).toUpperCase()}
                                 </div>
 
                                 {/* Name */}
                                 <span className="text-xs font-semibold leading-tight">
-                                    {player.name.split(' ')[0]}
+                                    {(player.nickname || player.name).split(' ')[0]}
                                 </span>
 
                                 {/* Position badge */}

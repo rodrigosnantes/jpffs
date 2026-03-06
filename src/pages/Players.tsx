@@ -53,7 +53,7 @@ export const Players = () => {
     const filteredPlayers = React.useMemo(() => {
         if (!searchTerm) return players;
         const term = searchTerm.toLowerCase();
-        return players.filter(p => p.name.toLowerCase().includes(term));
+        return players.filter(p => (p.nickname || p.name).toLowerCase().includes(term));
     }, [players, searchTerm]);
 
     const totalPages = Math.ceil(filteredPlayers.length / playersPerPage);
@@ -202,10 +202,10 @@ export const Players = () => {
                                     <td className="p-4 font-medium">
                                         <div className="flex items-center gap-3 group/name">
                                             <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-primary transition-colors">
-                                                {player.name.substring(0, 2).toUpperCase()}
+                                                {(player.nickname || player.name).substring(0, 2).toUpperCase()}
                                             </div>
                                             <div className="flex flex-col">
-                                                <span>{player.name}</span>
+                                                <span>{player.nickname || player.name}</span>
                                                 {player.plan === 'Legendary' && <span className="text-[10px] text-yellow-500 font-bold uppercase flex items-center gap-1"><Shield size={10} /> Lendário</span>}
                                                 {player.plan === 'Pro' && <span className="text-[10px] text-blue-400 font-bold uppercase">PRO</span>}
                                                 {(!player.plan || player.plan === 'Amateur') && <span className="text-[10px] text-gray-500 uppercase">Amador</span>}

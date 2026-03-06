@@ -77,7 +77,7 @@ export const Matches = () => {
     // ── Helpers ────────────────────────────────────────────────────────────
     const getPlayerName = (id: string) => {
         const p = players.find(pl => pl.id === id);
-        return p ? p.name.split(' ')[0] : '?';
+        return p ? (p.nickname || p.name).split(' ')[0] : '?';
     };
 
     const getResult = (scoreA: number | null, scoreB: number | null) => {

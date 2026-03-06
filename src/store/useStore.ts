@@ -55,7 +55,7 @@ export const useStore = create<AppState>((set, get) => ({
     fetchPlayers: async () => {
         const { data, error } = await supabase
             .from('players')
-            .select('*')
+            .select('*, profiles(nickname)')
             .order('name');
 
         if (error) {
@@ -63,7 +63,12 @@ export const useStore = create<AppState>((set, get) => ({
             return;
         }
 
-        set({ players: data as Player[] });
+        const mappedData = data.map((p: any) => ({
+            ...p,
+            nickname: p.profiles?.nickname || null
+        }));
+
+        set({ players: mappedData as Player[] });
     },
 
     fetchMatches: async () => {

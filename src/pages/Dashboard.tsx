@@ -170,7 +170,7 @@ export const Dashboard = () => {
                                                     return (
                                                         <span key={pid} className="flex items-center gap-1 text-[11px] text-gray-400 bg-white/5 px-2 py-0.5 rounded-full">
                                                             <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
-                                                            {p.name.split(' ')[0]}
+                                                            {(p.nickname || p.name).split(' ')[0]}
                                                         </span>
                                                     );
                                                 })}
@@ -214,7 +214,7 @@ export const Dashboard = () => {
                                         )}>
                                             {index + 1}
                                         </div>
-                                        <span className="font-medium text-white">{player.name}</span>
+                                        <span className="font-medium text-white">{player.nickname || player.name}</span>
                                     </div>
                                     <span className="font-bold text-primary">{player.stats.goals} Gols</span>
                                 </div>
