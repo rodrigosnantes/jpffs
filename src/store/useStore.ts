@@ -53,10 +53,7 @@ export const useStore = create<AppState>((set, get) => ({
     setSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
 
     fetchPlayers: async () => {
-        const { data, error } = await supabase
-            .from('players')
-            .select('*, profiles(nickname)')
-            .order('name');
+        const { data, error } = await supabase.from('players').select('*, profiles(nickname, status)').order('name');
 
         if (error) {
             console.error('Error fetching players:', error);
@@ -65,7 +62,8 @@ export const useStore = create<AppState>((set, get) => ({
 
         const mappedData = data.map((p: any) => ({
             ...p,
-            nickname: p.profiles?.nickname || null
+            nickname: p.profiles?.nickname || null,
+            status: p.profiles.status || 'active'
         }));
 
         set({ players: mappedData as Player[] });

@@ -24,14 +24,12 @@ export const Attendance = () => {
     const [confirmed, setConfirmed] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null); // player id being toggled
+    const [searchTerm, setSearchTerm] = useState('');
 
     // ── Load today's attendance ────────────────────────────────────────────
     useEffect(() => {
         const load = async () => {
-            const { data } = await supabase
-                .from('attendance')
-                .select('player_id')
-                .eq('date', todayISO());
+            const { data } = await supabase.from('attendance').select('player_id').eq('date', todayISO());
             setConfirmed(new Set((data ?? []).map((r: { player_id: string }) => r.player_id)));
             setLoading(false);
         };
@@ -72,8 +70,20 @@ export const Attendance = () => {
     }, [confirmed]);
 
     // ── Mark all / Clear all ───────────────────────────────────────────────
+
+    // Default active players only
+    const activePlayers = players.filter(p => p.status === 'active');
+
+    // Displayed players filtered by search term
+    const displayedPlayers = activePlayers.filter(p => {
+        const term = searchTerm.toLowerCase();
+        const matchesName = p.name.toLowerCase().includes(term);
+        const matchesNickname = p.nickname?.toLowerCase().includes(term);
+        return matchesName || matchesNickname;
+    });
+
     const markAll = async () => {
-        const rows = players.map(p => ({ player_id: p.id, date: todayISO(), confirmed: true }));
+        const rows = activePlayers.map(p => ({ player_id: p.id, date: todayISO(), confirmed: true }));
         const { error } = await supabase.from('attendance').upsert(rows, { onConflict: 'player_id,date' });
 
         if (error) {
@@ -90,7 +100,7 @@ export const Attendance = () => {
     };
 
     const confirmedCount = confirmed.size;
-    const allConfirmed = confirmedCount === players.length;
+    const allConfirmed = confirmedCount === activePlayers.length;
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -120,11 +130,25 @@ export const Attendance = () => {
                 </button>
             </div>
 
+            {/* Search */}
+            <div className="relative">
+                <input
+                    type="text"
+                    placeholder="Buscar jogador por nome ou apelido..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </div>
+            </div>
+
             {/* Summary bar */}
             <Card className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4">
                 <div className="flex items-center gap-6">
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-white">{players.length}</div>
+                        <div className="text-2xl font-bold text-white">{activePlayers.length}</div>
                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Total</div>
                     </div>
                     <div className="w-px h-8 bg-white/10" />
@@ -134,7 +158,7 @@ export const Attendance = () => {
                     </div>
                     <div className="w-px h-8 bg-white/10" />
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-500">{players.length - confirmedCount}</div>
+                        <div className="text-2xl font-bold text-gray-500">{activePlayers.length - confirmedCount}</div>
                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Ausentes</div>
                     </div>
                 </div>
@@ -144,7 +168,7 @@ export const Attendance = () => {
                     <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                         <div
                             className="h-full bg-green-500 rounded-full transition-all duration-500"
-                            style={{ width: players.length ? `${(confirmedCount / players.length) * 100}%` : '0%' }}
+                            style={{ width: activePlayers.length ? `${(confirmedCount / activePlayers.length) * 100}%` : '0%' }}
                         />
                     </div>
                 </div>
@@ -168,9 +192,13 @@ export const Attendance = () => {
                         <div key={i} className="h-24 rounded-xl bg-white/3 animate-pulse" />
                     ))}
                 </div>
+            ) : displayedPlayers.length === 0 ? (
+                <div className="py-12 text-center text-gray-500 bg-white/5 border border-white/10 rounded-xl">
+                    Nenhum jogador encontrado com essa busca.
+                </div>
             ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    {players.map(player => {
+                    {displayedPlayers.map(player => {
                         const isPresent = confirmed.has(player.id);
                         const isSaving = saving === player.id;
 

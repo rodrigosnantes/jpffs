@@ -13,10 +13,13 @@ export interface PlayerStats {
     red_cards: number;
 }
 
+export type UserStatus = 'active' | 'inactive';
+
 export interface Player {
     id: string;
     name: string;
     nickname?: string;
+    status?: UserStatus;
     photo_url?: string;
     position: Position;
     level: number; // 1 to 5

@@ -52,7 +52,7 @@ export const AdminPanel = () => {
     const [editForm, setEditForm] = useState({
         email: '',
         role: 'user' as 'admin' | 'user',
-        status: 'ativo' as string
+        status: 'active' as string
     });
     const [updatingUser, setUpdatingUser] = useState(false);
 
@@ -151,7 +151,11 @@ export const AdminPanel = () => {
     // ── Edit user ─────────────────────────────────────────────────────────
     const handleEditClick = (u: AdminUser) => {
         setEditingUserId(u.id);
-        setEditForm({ email: u.email, role: u.role as 'admin' | 'user', status: u.status || 'ativo' });
+        setEditForm({
+            email: u.email,
+            role: u.role as 'admin' | 'user',
+            status: u.status
+        });
     };
 
     const handleCancelEdit = () => {
@@ -431,8 +435,8 @@ export const AdminPanel = () => {
                                                 onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
                                                 className="bg-white/5 border border-white/20 rounded px-2 py-1 text-xs text-white uppercase font-bold"
                                             >
-                                                <option value="ativo" className="bg-zinc-800">Ativo</option>
-                                                <option value="inativo" className="bg-zinc-800">Inativo</option>
+                                                <option value="active" className="bg-zinc-800">Ativo</option>
+                                                <option value="inactive" className="bg-zinc-800">Inativo</option>
                                             </select>
                                         </div>
                                     ) : (
@@ -446,7 +450,7 @@ export const AdminPanel = () => {
                                                     {u.id === user?.id && (
                                                         <span className="text-[9px] text-gray-500 bg-white/5 px-1.5 rounded-full">você</span>
                                                     )}
-                                                    {u.status === 'inativo' ? (
+                                                    {u.status === 'inactive' ? (
                                                         <span className="text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full border border-red-500/20">
                                                             Inativo
                                                         </span>
