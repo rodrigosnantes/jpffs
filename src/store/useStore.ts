@@ -279,6 +279,8 @@ export const useStore = create<AppState>((set, get) => ({
         const allPlayers = [...teamAPlayers, ...teamBPlayers];
 
         for (const player of allPlayers) {
+            if (player.id.startsWith('generic-gk-')) continue;
+
             const inTeamA = teamAPlayers.some(p => p.id === player.id);
             const inTeamB = teamBPlayers.some(p => p.id === player.id);
 
@@ -354,24 +356,31 @@ export const useStore = create<AppState>((set, get) => ({
 
         if (!matchId) return;
 
-        const { error } = await supabase
-            .from('match_events')
-            .insert([{
-                match_id: matchId,
-                player_id: eventData.playerId,
-                type: eventData.type,
-                timestamp: new Date().toISOString(),
-                assist_id: eventData.assistId,
-                team: eventData.team
-            }]);
+        const isGenericPlayer = eventData.playerId.startsWith('generic-gk-');
+        const isGenericAssist = eventData.assistId?.startsWith('generic-gk-');
+        const safeAssistId = isGenericAssist ? null : eventData.assistId;
 
-        if (error) console.error('Error adding event:', error);
+        if (!isGenericPlayer) {
+            const { error } = await supabase
+                .from('match_events')
+                .insert([{
+                    match_id: matchId,
+                    player_id: eventData.playerId,
+                    type: eventData.type,
+                    timestamp: new Date().toISOString(),
+                    assist_id: safeAssistId,
+                    team: eventData.team
+                }]);
 
-        // Optimistic Update
+            if (error) console.error('Error adding event:', error);
+        }
+
+        // Optimistic Update (happens for all, including generic GKs, to update the scoreboard visually)
         const newEvent: MatchEvent = {
             id: crypto.randomUUID(), // Temp ID
             timestamp: new Date().toISOString(),
-            ...eventData
+            ...eventData,
+            assistId: safeAssistId || undefined
         };
 
         let { teamAScore, teamBScore } = state.currentMatch;
