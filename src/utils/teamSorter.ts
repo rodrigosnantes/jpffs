@@ -10,6 +10,7 @@ export interface Team {
 export interface TeamGenerationConfig {
     playersPerTeam: number;
     random?: boolean;
+    fillGenericGks?: boolean;
 }
 
 export const generateTeams = (
@@ -17,7 +18,7 @@ export const generateTeams = (
     config: TeamGenerationConfig = { playersPerTeam: 5 }
 ): { teams: Team[], bench: Player[] } => {
 
-    const { playersPerTeam, random = false } = config;
+    const { playersPerTeam, random = false, fillGenericGks = true } = config;
 
     // 1. Separate Goalkeepers and Line Players
     const goalkeepers = players.filter(p => p.position === 'Goalkeeper');
@@ -96,6 +97,26 @@ export const generateTeams = (
     const shuffledGKs = [...goalkeepers].sort(() => Math.random() - 0.5);
     const assignedGks = shuffledGKs.slice(0, numTeams);
     const benchGks = shuffledGKs.slice(numTeams);
+
+    if (!random && fillGenericGks && assignedGks.length < numTeams) {
+        const neededGks = numTeams - assignedGks.length;
+        for (let i = 0; i < neededGks; i++) {
+            assignedGks.push({
+                id: `generic-gk-${Date.now()}-${i}`,
+                name: 'Goleiro Genérico',
+                position: 'Goalkeeper',
+                level: 3,
+                stats: {
+                    goals: 0, assists: 0, wins: 0, draws: 0, losses: 0,
+                    matches_played: 0, yellow_cards: 0, red_cards: 0
+                },
+                attributes: {
+                    attack: 50, defense: 50, pace: 50,
+                    shooting: 50, passing: 50, physical: 50
+                }
+            });
+        }
+    }
 
     assignedGks.forEach((gk, i) => {
         teams[i].push(gk);

@@ -16,12 +16,13 @@ export const Teams = () => {
     const [confirmedIds, setConfirmedIds] = useState<string[]>([]);
     const [attendanceLoaded, setAttendanceLoaded] = useState(false);
 
-    // Selected teams for the match
-    const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
-
-    // Settings State
+    // Sort Config
     const [playersPerTeam, setPlayersPerTeam] = useState<number>(5);
     const [isRandom, setIsRandom] = useState<boolean>(false);
+    const [fillGenericGks, setFillGenericGks] = useState<boolean>(true);
+
+    // Selected teams for the match
+    const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
 
     // Manual Team State
     const [isManualModalOpen, setIsManualModalOpen] = useState(false);
@@ -64,11 +65,11 @@ export const Teams = () => {
 
     const handleGenerateTeams = () => {
         const selectedPlayers = attendedPlayers.filter(p => selectedPlayerIds.includes(p.id));
-        if (selectedPlayers.length < playersPerTeam * 2) {
-            alert(`Selecione pelo menos ${playersPerTeam * 2} jogadores (2 times completos).`);
+        if (selectedPlayers.length < 10) {
+            alert("Selecione pelo menos 10 jogadores (2 times completos).");
             return;
         }
-        const { teams, bench } = generateTeams(selectedPlayers, { playersPerTeam, random: isRandom });
+        const { teams, bench } = generateTeams(selectedPlayers, { playersPerTeam, random: isRandom, fillGenericGks });
         setGeneratedTeams({ teams, bench });
         setSelectedTeamIds([]); // reset any previous selection
     };
@@ -291,6 +292,34 @@ export const Teams = () => {
                                         className={cn(
                                             "absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-200",
                                             isRandom ? "translate-x-6" : "translate-x-0"
+                                        )}
+                                    />
+                                </button>
+                            </div>
+
+                            {/* Generic GK Toggle */}
+                            <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                <div>
+                                    <h3 className="text-white font-semibold flex items-center gap-2 text-sm">
+                                        <Shield size={14} className={fillGenericGks && !isRandom ? 'text-yellow-500' : 'text-gray-500'} />
+                                        Completar com Goleiros Genéricos
+                                    </h3>
+                                    <p className="text-xs text-gray-400 mt-1 max-w-[280px]">
+                                        Se faltarem goleiros para fechar 1 por time, o sistema criará goleiros falsos para equilibrar a quantidade de jogadores de linha.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setFillGenericGks(!fillGenericGks)}
+                                    disabled={isRandom}
+                                    className={cn(
+                                        "relative w-12 h-6 rounded-full transition-colors duration-200 outline-none",
+                                        isRandom ? "bg-white/5 cursor-not-allowed opacity-50" : fillGenericGks ? "bg-yellow-500" : "bg-white/10"
+                                    )}
+                                >
+                                    <span
+                                        className={cn(
+                                            "absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-200",
+                                            fillGenericGks && !isRandom ? "translate-x-6" : "translate-x-0"
                                         )}
                                     />
                                 </button>
