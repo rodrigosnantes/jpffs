@@ -19,6 +19,9 @@ export const Teams = () => {
     // Selected teams for the match
     const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
 
+    // Settings State
+    const [playersPerTeam, setPlayersPerTeam] = useState<number>(5);
+
     // Manual Team State
     const [isManualModalOpen, setIsManualModalOpen] = useState(false);
     const [manualTeamPlayers, setManualTeamPlayers] = useState<Player[]>([]);
@@ -60,11 +63,11 @@ export const Teams = () => {
 
     const handleGenerateTeams = () => {
         const selectedPlayers = attendedPlayers.filter(p => selectedPlayerIds.includes(p.id));
-        if (selectedPlayers.length < 10) {
-            alert("Selecione pelo menos 10 jogadores (2 times completos).");
+        if (selectedPlayers.length < playersPerTeam * 2) {
+            alert(`Selecione pelo menos ${playersPerTeam * 2} jogadores (2 times completos).`);
             return;
         }
-        const { teams, bench } = generateTeams(selectedPlayers, 5); // 5 players per team by default
+        const { teams, bench } = generateTeams(selectedPlayers, { playersPerTeam });
         setGeneratedTeams({ teams, bench });
         setSelectedTeamIds([]); // reset any previous selection
     };
@@ -99,8 +102,8 @@ export const Teams = () => {
             if (isSelected) {
                 return prev.filter(p => p.id !== player.id);
             } else {
-                if (prev.length >= 5) {
-                    alert("O time já está completo (5 jogadores). Remova alguém primeiro.");
+                if (prev.length >= playersPerTeam) {
+                    alert(`O time já está completo (${playersPerTeam} jogadores). Remova alguém primeiro.`);
                     return prev;
                 }
                 return [...prev, player];
@@ -239,6 +242,30 @@ export const Teams = () => {
                             </div>
                         </div>
 
+                        {/* Config Panel */}
+                        <div className="mb-6 bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between">
+                            <div>
+                                <h3 className="text-white font-semibold text-sm">Jogadores por Time</h3>
+                                <p className="text-xs text-gray-400">Define o limite exato de membros em quadra.</p>
+                            </div>
+                            <div className="flex items-center bg-black/50 rounded-lg p-1">
+                                {[4, 5, 6, 7].map(num => (
+                                    <button
+                                        key={num}
+                                        onClick={() => setPlayersPerTeam(num)}
+                                        className={cn(
+                                            "w-10 h-8 flex items-center justify-center rounded-md text-sm font-bold transition-colors",
+                                            playersPerTeam === num
+                                                ? "bg-primary text-white shadow"
+                                                : "text-gray-400 hover:text-white"
+                                        )}
+                                    >
+                                        {num}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         {/* Empty state OR player list */}
                         {attendanceLoaded && attendedPlayers.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-12 text-gray-500 gap-3">
@@ -343,7 +370,7 @@ export const Teams = () => {
                                     Montar Time Manual
                                 </h3>
                                 <p className="text-sm text-gray-400 mt-1">
-                                    Monte um time extra com {manualTeamPlayers.length}/5 jogadores para jogar contra os outros.
+                                    Monte um time extra com {manualTeamPlayers.length}/{playersPerTeam} jogadores para jogar contra os outros.
                                 </p>
                             </div>
                             <button
@@ -397,7 +424,7 @@ export const Teams = () => {
                             {/* New Team Preview */}
                             <div>
                                 <h4 className="font-semibold text-primary mb-3 border-b border-white/10 pb-2">
-                                    Novo Time ({manualTeamPlayers.length}/5)
+                                    Novo Time ({manualTeamPlayers.length}/{playersPerTeam})
                                 </h4>
                                 <div className="space-y-2">
                                     {manualTeamPlayers.length === 0 ? (

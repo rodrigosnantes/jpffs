@@ -7,23 +7,30 @@ export interface Team {
     totalLevel: number;
 }
 
-export const generateTeams = (players: Player[], playersPerTeam: number = 5): { teams: Team[], bench: Player[] } => {
-    // 1. Filter Goalkeepers and Line Players
+export interface TeamGenerationConfig {
+    playersPerTeam: number;
+}
+
+export const generateTeams = (
+    players: Player[],
+    config: TeamGenerationConfig = { playersPerTeam: 5 }
+): { teams: Team[], bench: Player[] } => {
+
+    const { playersPerTeam } = config;
+
+    // 1. Separate Goalkeepers and Line Players
     const goalkeepers = players.filter(p => p.position === 'Goalkeeper');
     const linePlayers = players.filter(p => p.position === 'Line');
 
-    // 2. Sort Line Players by Level (Descending) for fair distribution
+    // 2. Sort Line Players by Level (Descending)
     const sortedLinePlayers = [...linePlayers].sort((a, b) => b.level - a.level);
 
-    // 3. Calculate possible number of teams
-    // Based ONLY on line players, because we can always rotate GKs or play without them if short.
-    // If you prefer to count GKs in the total 5 men per team limit, adjust here.
-    const numTeams = Math.floor(sortedLinePlayers.length / playersPerTeam);
+    // 3. Calculate max possible teams
+    const totalPlayers = players.length;
+    const numTeams = Math.floor(totalPlayers / playersPerTeam);
 
-    // If not enough players for even 1 complete team, we still try to balance what we have into 2 teams
-    // or just return 0 teams if strict. For now, let's gracefully fallback or strictly enforce:
     if (numTeams < 2) {
-        // Fallback to legacy logic of splitting everyone in 2 small teams if there are fewer than 10 people
+        // Fallback for very small groups: Attempt 2 bare-minimum teams
         const teamA: Player[] = [];
         const teamB: Player[] = [];
 
@@ -33,7 +40,7 @@ export const generateTeams = (players: Player[], playersPerTeam: number = 5): { 
 
         sortedLinePlayers.forEach((player, index) => {
             const cycleIndex = index % 4;
-            if ([0, 3].includes(cycleIndex)) { // 0, 1, 1, 0 snake order
+            if ([0, 3].includes(cycleIndex)) {
                 teamA.push(player);
             } else {
                 teamB.push(player);
@@ -51,10 +58,10 @@ export const generateTeams = (players: Player[], playersPerTeam: number = 5): { 
         };
     }
 
-    // 4. Initialize N Teams
+    // 4. Initialize valid Teams
     const teams: Player[][] = Array.from({ length: numTeams }, () => []);
 
-    // 5. Distribute GKs (up to numTeams GKs)
+    // 5. Shuffle and distribute Goalkeepers (Max 1 per team)
     const shuffledGKs = [...goalkeepers].sort(() => Math.random() - 0.5);
     const assignedGks = shuffledGKs.slice(0, numTeams);
     const benchGks = shuffledGKs.slice(numTeams);
@@ -63,18 +70,41 @@ export const generateTeams = (players: Player[], playersPerTeam: number = 5): { 
         teams[i].push(gk);
     });
 
-    // 6. Distribute Line Players via Snake Draft limited to (numTeams * playersPerTeam)
-    const playersToDraft = numTeams * playersPerTeam;
-    const draftedLinePlayers = sortedLinePlayers.slice(0, playersToDraft);
-    const benchLinePlayers = sortedLinePlayers.slice(playersToDraft);
+    // 6. Calculate exactly how many line players are needed to fill holes
+    // Every team needs exactly `playersPerTeam` total players.
+    // If a team didn't receive a GK, it needs `playersPerTeam` line players.
+    // If it did, it needs `playersPerTeam - 1` line players.
+    const getTeamDeficit = (teamIndex: number) => playersPerTeam - teams[teamIndex].length;
 
-    draftedLinePlayers.forEach((player, index) => {
-        // E.g., for 3 teams: 0, 1, 2, 2, 1, 0, 0, 1, 2...
-        const cycleLength = numTeams * 2;
-        const cyclePos = index % cycleLength;
-        const teamIndex = cyclePos < numTeams ? cyclePos : (cycleLength - 1) - cyclePos;
-        teams[teamIndex].push(player);
-    });
+    let linePlayerIndex = 0;
+    const maxLinePlayers = sortedLinePlayers.length;
+
+    // Distribute Line Players using Snake Draft
+    // We do rounds until all teams are full or we run out of line players
+    let isReversed = false;
+    let keepDrafting = true;
+
+    while (keepDrafting) {
+        keepDrafting = false;
+
+        // Determine the order for this round
+        const order = Array.from({ length: numTeams }, (_, i) => i);
+        if (isReversed) order.reverse();
+
+        for (const teamIndex of order) {
+            if (getTeamDeficit(teamIndex) > 0 && linePlayerIndex < maxLinePlayers) {
+                teams[teamIndex].push(sortedLinePlayers[linePlayerIndex]);
+                linePlayerIndex++;
+                keepDrafting = true; // successfully drafted someone, might need another round
+            }
+        }
+
+        // Toggle direction for Snake Draft
+        isReversed = !isReversed;
+    }
+
+    // 7. Collect Bench (Line players that didn't fit into the exact capacities)
+    const benchLinePlayers = sortedLinePlayers.slice(linePlayerIndex);
 
     const calculateTotalLevel = (t: Player[]) => t.reduce((sum, p) => sum + p.level, 0);
 
