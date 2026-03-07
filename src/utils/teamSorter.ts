@@ -9,6 +9,7 @@ export interface Team {
 
 export interface TeamGenerationConfig {
     playersPerTeam: number;
+    random?: boolean;
 }
 
 export const generateTeams = (
@@ -16,7 +17,7 @@ export const generateTeams = (
     config: TeamGenerationConfig = { playersPerTeam: 5 }
 ): { teams: Team[], bench: Player[] } => {
 
-    const { playersPerTeam } = config;
+    const { playersPerTeam, random = false } = config;
 
     // 1. Separate Goalkeepers and Line Players
     const goalkeepers = players.filter(p => p.position === 'Goalkeeper');
@@ -28,6 +29,38 @@ export const generateTeams = (
     // 3. Calculate max possible teams
     const totalPlayers = players.length;
     const numTeams = Math.floor(totalPlayers / playersPerTeam);
+
+    const calculateTotalLevel = (t: Player[]) => t.reduce((sum, p) => sum + p.level, 0);
+
+    // --- RANDOM MODE BYPASS ---
+    if (random) {
+        // Shuffle ALL players completely, ignoring positions and levels
+        const shuffledAll = [...players].sort(() => Math.random() - 0.5);
+
+        const teams: Player[][] = Array.from({ length: numTeams }, () => []);
+        const totalToDraft = numTeams * playersPerTeam;
+
+        const draftedPlayers = shuffledAll.slice(0, totalToDraft);
+        const benchPlayers = shuffledAll.slice(totalToDraft);
+
+        draftedPlayers.forEach((player, index) => {
+            const teamIndex = Math.floor(index / playersPerTeam);
+            teams[teamIndex].push(player);
+        });
+
+        const generatedTeams: Team[] = teams.map((teamPlayers, index) => ({
+            id: (index + 1).toString(),
+            name: `Time ${index + 1}`,
+            players: teamPlayers,
+            totalLevel: calculateTotalLevel(teamPlayers)
+        }));
+
+        return {
+            teams: generatedTeams,
+            bench: benchPlayers
+        };
+    }
+    // --- END RANDOM MODE ---
 
     if (numTeams < 2) {
         // Fallback for very small groups: Attempt 2 bare-minimum teams
@@ -46,8 +79,6 @@ export const generateTeams = (
                 teamB.push(player);
             }
         });
-
-        const calculateTotalLevel = (t: Player[]) => t.reduce((sum, p) => sum + p.level, 0);
 
         return {
             teams: [
@@ -105,8 +136,6 @@ export const generateTeams = (
 
     // 7. Collect Bench (Line players that didn't fit into the exact capacities)
     const benchLinePlayers = sortedLinePlayers.slice(linePlayerIndex);
-
-    const calculateTotalLevel = (t: Player[]) => t.reduce((sum, p) => sum + p.level, 0);
 
     const generatedTeams: Team[] = teams.map((teamPlayers, index) => ({
         id: (index + 1).toString(),

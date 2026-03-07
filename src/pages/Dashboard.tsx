@@ -5,6 +5,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Users, Trophy, Play, ArrowRight, Activity, Calendar } from 'lucide-react';
 import { cn } from '../utils/cn';
+import Logo from '../assets/Logo.png';
 
 export const Dashboard = () => {
     const { players, matches, currentMatch } = useStore();
@@ -17,9 +18,12 @@ export const Dashboard = () => {
             {/* Hero Section */}
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary/20 to-secondary/20 border border-white/5 p-8 md:p-12">
                 <div className="relative z-10">
-                    <h1 className="text-4xl md:text-5xl font-header font-bold text-white mb-4">
-                        JPFFS <span className="text-primary">Manager</span>
-                    </h1>
+                    <div className='flex items-center gap-2'>
+                        <img src={Logo} alt="logo" className='w-24 h-24 object-contain' />
+                        <h1 className="text-4xl md:text-5xl font-header font-bold text-white mb-4">
+                            The <span className="text-primary">Game</span>
+                        </h1>
+                    </div>
                     <p className="text-gray-300 text-lg max-w-xl mb-8">
                         Gerencie suas peladas, acompanhe estatísticas em tempo real e descubra quem são os verdadeiros craques da galera.
                     </p>

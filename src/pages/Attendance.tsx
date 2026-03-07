@@ -90,17 +90,21 @@ export const Attendance = () => {
             console.error("Failed to mark all", error);
             alert("Erro ao confirmar presença de todos: " + error.message);
         } else {
-            setConfirmed(new Set(players.map(p => p.id)));
+            // Include previously confirmed inactive so we don't accidentally lose their data in state
+            // but for the UI to be correct, we make sure activePlayers are now added to the set.
+            setConfirmed(prev => new Set([...prev, ...activePlayers.map(p => p.id)]));
         }
     };
 
     const clearAll = async () => {
+        // Delete all attendance for today in the DB
         await supabase.from('attendance').delete().eq('date', todayISO());
         setConfirmed(new Set());
     };
 
-    const confirmedCount = confirmed.size;
-    const allConfirmed = confirmedCount === activePlayers.length;
+    // Calculate counts strictly based on Active Players
+    const activeConfirmedCount = activePlayers.filter(p => confirmed.has(p.id)).length;
+    const allConfirmed = activeConfirmedCount === activePlayers.length && activePlayers.length > 0;
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -117,10 +121,10 @@ export const Attendance = () => {
                 {/* CTA to Teams */}
                 <button
                     onClick={() => navigate('/teams')}
-                    disabled={confirmedCount < 2}
+                    disabled={activeConfirmedCount < 2}
                     className={cn(
                         'flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all',
-                        confirmedCount >= 2
+                        activeConfirmedCount >= 2
                             ? 'bg-primary text-background hover:bg-primary/90 shadow-lg shadow-primary/20'
                             : 'bg-white/5 text-gray-600 cursor-not-allowed'
                     )}
@@ -153,12 +157,12 @@ export const Attendance = () => {
                     </div>
                     <div className="w-px h-8 bg-white/10" />
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-green-400">{confirmedCount}</div>
+                        <div className="text-2xl font-bold text-green-400">{activeConfirmedCount}</div>
                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Presentes</div>
                     </div>
                     <div className="w-px h-8 bg-white/10" />
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-500">{activePlayers.length - confirmedCount}</div>
+                        <div className="text-2xl font-bold text-gray-500">{activePlayers.length - activeConfirmedCount}</div>
                         <div className="text-[10px] text-gray-500 uppercase tracking-wider">Ausentes</div>
                     </div>
                 </div>
@@ -168,7 +172,7 @@ export const Attendance = () => {
                     <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                         <div
                             className="h-full bg-green-500 rounded-full transition-all duration-500"
-                            style={{ width: activePlayers.length ? `${(confirmedCount / activePlayers.length) * 100}%` : '0%' }}
+                            style={{ width: activePlayers.length ? `${(activeConfirmedCount / activePlayers.length) * 100}%` : '0%' }}
                         />
                     </div>
                 </div>
@@ -256,9 +260,9 @@ export const Attendance = () => {
             )}
 
             {/* Footer hint */}
-            {confirmedCount >= 2 && (
+            {activeConfirmedCount >= 2 && (
                 <p className="text-center text-xs text-gray-600 animate-in fade-in duration-500">
-                    {confirmedCount} jogadores confirmados — pronto para sortear os times!
+                    {activeConfirmedCount} jogadores confirmados — pronto para sortear os times!
                 </p>
             )}
         </div>

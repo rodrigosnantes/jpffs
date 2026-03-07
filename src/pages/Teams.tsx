@@ -21,6 +21,7 @@ export const Teams = () => {
 
     // Settings State
     const [playersPerTeam, setPlayersPerTeam] = useState<number>(5);
+    const [isRandom, setIsRandom] = useState<boolean>(false);
 
     // Manual Team State
     const [isManualModalOpen, setIsManualModalOpen] = useState(false);
@@ -67,7 +68,7 @@ export const Teams = () => {
             alert(`Selecione pelo menos ${playersPerTeam * 2} jogadores (2 times completos).`);
             return;
         }
-        const { teams, bench } = generateTeams(selectedPlayers, { playersPerTeam });
+        const { teams, bench } = generateTeams(selectedPlayers, { playersPerTeam, random: isRandom });
         setGeneratedTeams({ teams, bench });
         setSelectedTeamIds([]); // reset any previous selection
     };
@@ -243,26 +244,56 @@ export const Teams = () => {
                         </div>
 
                         {/* Config Panel */}
-                        <div className="mb-6 bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between">
-                            <div>
-                                <h3 className="text-white font-semibold text-sm">Jogadores por Time</h3>
-                                <p className="text-xs text-gray-400">Define o limite exato de membros em quadra.</p>
+                        <div className="mb-6 bg-white/5 border border-white/10 p-5 rounded-xl space-y-5">
+                            {/* Players Per Team row */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="text-white font-semibold text-sm">Jogadores por Time</h3>
+                                    <p className="text-xs text-gray-400">Define o limite exato de membros em quadra.</p>
+                                </div>
+                                <div className="flex items-center bg-black/50 rounded-lg p-1">
+                                    {[4, 5, 6, 7].map(num => (
+                                        <button
+                                            key={num}
+                                            onClick={() => setPlayersPerTeam(num)}
+                                            className={cn(
+                                                "w-10 h-8 flex items-center justify-center rounded-md text-sm font-bold transition-colors",
+                                                playersPerTeam === num
+                                                    ? "bg-primary text-white shadow"
+                                                    : "text-gray-400 hover:text-white"
+                                            )}
+                                        >
+                                            {num}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="flex items-center bg-black/50 rounded-lg p-1">
-                                {[4, 5, 6, 7].map(num => (
-                                    <button
-                                        key={num}
-                                        onClick={() => setPlayersPerTeam(num)}
+
+                            {/* Random Generation Toggle */}
+                            <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                <div>
+                                    <h3 className="text-white font-semibold flex items-center gap-2 text-sm">
+                                        <RefreshCw size={14} className={isRandom ? 'text-primary' : 'text-gray-500'} />
+                                        Sorteio 100% Aleatório
+                                    </h3>
+                                    <p className="text-xs text-gray-400 mt-1 max-w-[280px]">
+                                        Ignora níveis e posições. Os jogadores são divididos completamente na sorte rumo ao desconhecido.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setIsRandom(!isRandom)}
+                                    className={cn(
+                                        "relative w-12 h-6 rounded-full transition-colors duration-200 outline-none",
+                                        isRandom ? "bg-primary" : "bg-white/10"
+                                    )}
+                                >
+                                    <span
                                         className={cn(
-                                            "w-10 h-8 flex items-center justify-center rounded-md text-sm font-bold transition-colors",
-                                            playersPerTeam === num
-                                                ? "bg-primary text-white shadow"
-                                                : "text-gray-400 hover:text-white"
+                                            "absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-200",
+                                            isRandom ? "translate-x-6" : "translate-x-0"
                                         )}
-                                    >
-                                        {num}
-                                    </button>
-                                ))}
+                                    />
+                                </button>
                             </div>
                         </div>
 
