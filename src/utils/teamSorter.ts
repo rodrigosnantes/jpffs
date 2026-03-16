@@ -24,8 +24,11 @@ export const generateTeams = (
     const goalkeepers = players.filter(p => p.position === 'Goalkeeper');
     const linePlayers = players.filter(p => p.position === 'Line');
 
-    // 2. Sort Line Players by Level (Descending)
-    const sortedLinePlayers = [...linePlayers].sort((a, b) => b.level - a.level);
+    // 2. Sort Line Players by Level (Descending), randomize within same level
+    const sortedLinePlayers = [...linePlayers].sort((a, b) => {
+        if (b.level !== a.level) return b.level - a.level;
+        return Math.random() - 0.5; // randomize players of equal level
+    });
 
     // 3. Calculate max possible teams
     const totalPlayers = players.length;
@@ -102,7 +105,7 @@ export const generateTeams = (
         const neededGks = numTeams - assignedGks.length;
         for (let i = 0; i < neededGks; i++) {
             assignedGks.push({
-                id: `generic-gk-${Date.now()}-${i}`,
+                id: `generic-gk-${Date.now()}-${Math.random().toString(36).slice(2)}-${i}`,
                 name: 'Goleiro Genérico',
                 position: 'Goalkeeper',
                 level: 3,
@@ -118,7 +121,10 @@ export const generateTeams = (
         }
     }
 
-    assignedGks.forEach((gk, i) => {
+    // Shuffle all GKs (real + generic) so generic ones can land on any team
+    const finalGks = [...assignedGks].sort(() => Math.random() - 0.5);
+
+    finalGks.forEach((gk, i) => {
         teams[i].push(gk);
     });
 
