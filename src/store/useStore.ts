@@ -6,7 +6,7 @@ import type { Team } from '../utils/teamSorter';
 interface AppState {
     players: Player[];
     matches: Match[];
-    generatedTeams: { teams: Team[], bench: Player[] } | null;
+    generatedTeams: { teams: Team[], bench: Player[], benchTeams?: Team[] } | null;
     lastMVP: { id: string; name: string; goals: number; assists: number; team: 'A' | 'B' } | null;
 
     // Live Match State
@@ -22,7 +22,7 @@ interface AppState {
     addPlayer: (player: Omit<Player, 'id' | 'stats' | 'attributes'>) => Promise<void>;
     updatePlayer: (id: string, updates: Partial<Player>) => Promise<void>;
     deletePlayer: (id: string) => Promise<void>;
-    setGeneratedTeams: (teamsData: { teams: Team[], bench: Player[] } | null) => void;
+    setGeneratedTeams: (teamsData: { teams: Team[], bench: Player[], benchTeams?: Team[] } | null) => void;
 
     // Match Actions
     startMatch: (teamAInfo: Team, teamBInfo: Team) => Promise<{ error?: string }>;

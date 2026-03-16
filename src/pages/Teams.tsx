@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Shield, Users, RefreshCw, Trophy, UserPlus, X, Plus } from 'lucide-react';
+import { Shield, Users, RefreshCw, Trophy, UserPlus, X, Plus, Shuffle } from 'lucide-react';
 import { generateTeams, type Team } from '../utils/teamSorter';
 import type { Player } from '../types';
 import { cn } from '../utils/cn';
@@ -20,6 +20,7 @@ export const Teams = () => {
     const [playersPerTeam, setPlayersPerTeam] = useState<number>(5);
     const [isRandom, setIsRandom] = useState<boolean>(false);
     const [fillGenericGks, setFillGenericGks] = useState<boolean>(true);
+    const [redistributeBench, setRedistributeBench] = useState<boolean>(true);
 
     // Selected teams for the match
     const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
@@ -28,6 +29,7 @@ export const Teams = () => {
     const [isManualModalOpen, setIsManualModalOpen] = useState(false);
     const [manualTeamPlayers, setManualTeamPlayers] = useState<Player[]>([]);
     const [manualTeamGenerating, setManualTeamGenerating] = useState(false);
+    const [editingBenchTeamIndex, setEditingBenchTeamIndex] = useState<number | null>(null);
 
     // Load today's confirmed players
     useEffect(() => {
@@ -69,8 +71,8 @@ export const Teams = () => {
             alert("Selecione pelo menos 10 jogadores (2 times completos).");
             return;
         }
-        const { teams, bench } = generateTeams(selectedPlayers, { playersPerTeam, random: isRandom, fillGenericGks });
-        setGeneratedTeams({ teams, bench });
+        const result = generateTeams(selectedPlayers, { playersPerTeam, random: isRandom, fillGenericGks, redistributeBench });
+        setGeneratedTeams(result);
         setSelectedTeamIds([]); // reset any previous selection
     };
 
@@ -123,20 +125,46 @@ export const Teams = () => {
         setManualTeamGenerating(true);
         setTimeout(() => {
             const teamLevel = manualTeamPlayers.reduce((sum, p) => sum + p.level, 0);
-            const newTeam: Team = {
-                id: `manual-team-${Date.now()}`,
-                name: `Time ${generatedTeams.teams.length + 1}`,
-                players: manualTeamPlayers,
-                totalLevel: teamLevel
-            };
 
-            setGeneratedTeams({
-                teams: [...generatedTeams.teams, newTeam],
-                bench: [] // Esvazia o banco pois os jogadores foram integrados num time (ou ficaram de fora da quadra manualmente)
-            });
+            if (editingBenchTeamIndex !== null && generatedTeams.benchTeams) {
+                // Editing an existing bench team
+                const updatedBenchTeams = [...generatedTeams.benchTeams];
+                updatedBenchTeams[editingBenchTeamIndex] = {
+                    ...updatedBenchTeams[editingBenchTeamIndex],
+                    players: manualTeamPlayers,
+                    totalLevel: teamLevel,
+                };
+                setGeneratedTeams({
+                    ...generatedTeams,
+                    benchTeams: updatedBenchTeams,
+                });
+            } else {
+                // Creating a brand-new manual team
+                const newTeam: Team = {
+                    id: `manual-team-${Date.now()}`,
+                    name: `Time ${generatedTeams.teams.length + (generatedTeams.benchTeams?.length ?? 0) + 1}`,
+                    players: manualTeamPlayers,
+                    totalLevel: teamLevel
+                };
+                setGeneratedTeams({
+                    ...generatedTeams,
+                    teams: [...generatedTeams.teams, newTeam],
+                    bench: [],
+                });
+            }
+
             setIsManualModalOpen(false);
+            setEditingBenchTeamIndex(null);
             setManualTeamGenerating(false);
         }, 500);
+    };
+
+    // ── Edit Bench Team ───────────────────────────────────────────────────
+    const handleEditBenchTeam = (index: number) => {
+        if (!generatedTeams?.benchTeams?.[index]) return;
+        setEditingBenchTeamIndex(index);
+        setManualTeamPlayers([...generatedTeams.benchTeams[index].players]);
+        setIsManualModalOpen(true);
     };
 
     // Helper to render a team card
@@ -324,6 +352,33 @@ export const Teams = () => {
                                     />
                                 </button>
                             </div>
+
+                            {/* Redistribute Bench Toggle */}
+                            <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                <div>
+                                    <h3 className="text-white font-semibold flex items-center gap-2 text-sm">
+                                        <Shuffle size={14} className={redistributeBench ? 'text-primary' : 'text-gray-500'} />
+                                        Redistribuir Excedentes
+                                    </h3>
+                                    <p className="text-xs text-gray-400 mt-1 max-w-[280px]">
+                                        Jogadores que sobrarem serão redistribuídos em dois sub-times extras ao invés de ficarem no banco.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setRedistributeBench(!redistributeBench)}
+                                    className={cn(
+                                        "relative w-12 h-6 rounded-full transition-colors duration-200 outline-none",
+                                        redistributeBench ? "bg-primary" : "bg-white/10"
+                                    )}
+                                >
+                                    <span
+                                        className={cn(
+                                            "absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform duration-200",
+                                            redistributeBench ? "translate-x-6" : "translate-x-0"
+                                        )}
+                                    />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Empty state OR player list */}
@@ -401,18 +456,90 @@ export const Teams = () => {
                             );
                         })}
 
-                        {/* Bench Queue */}
+                        {/* Bench Queue (when redistribute is OFF) */}
                         {generatedTeams.bench && generatedTeams.bench.length > 0 && (
                             <BenchCard players={generatedTeams.bench} />
                         )}
                     </div>
 
+                    {/* Bench Teams (redistributed excess) */}
+                    {generatedTeams.benchTeams && generatedTeams.benchTeams.length > 0 && (
+                        <div className="mt-2">
+                            <div className="flex items-center gap-2 mb-4">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">
+                                    Times Extras
+                                </h3>
+                                <span className="text-[10px] bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded-full font-medium">
+                                    Incompletos
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {generatedTeams.benchTeams.map((team, index) => {
+                                    const isSelected = selectedTeamIds.includes(team.id);
+                                    const benchColors = ['border-t-amber-500/60', 'border-t-teal-500/60'];
+                                    return (
+                                        <Card
+                                            key={team.id}
+                                            className={cn(
+                                                "border-t-4 border-dashed transition-all cursor-pointer relative overflow-hidden",
+                                                benchColors[index % benchColors.length],
+                                                isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02]" : "hover:border-white/20 hover:bg-white/5 opacity-80 hover:opacity-100"
+                                            )}
+                                            onClick={() => handleToggleTeamSelect(team.id)}
+                                        >
+                                            {isSelected && (
+                                                <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold uppercase py-1 px-3 rounded-bl-lg">
+                                                    Selecionado
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center mb-4">
+                                                <div className="flex items-center gap-2">
+                                                    <h2 className="text-xl font-bold font-header">{team.name}</h2>
+                                                    <span className="text-[9px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded-full font-bold uppercase">
+                                                        {team.players.length}/{playersPerTeam}
+                                                    </span>
+                                                </div>
+                                                <div className="bg-white/10 px-3 py-1 rounded-full text-sm font-mono">
+                                                    Nível: {team.totalLevel}
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {team.players.map(p => (
+                                                    <div key={p.id} className="flex items-center justify-between p-2 rounded bg-white/5">
+                                                        <div className="flex items-center gap-2">
+                                                            {p.position === 'Goalkeeper' && <Shield size={14} className="text-yellow-500" />}
+                                                            <span className="font-medium">{p.nickname || p.name}</span>
+                                                        </div>
+                                                        <div className="flex gap-0.5">
+                                                            {[...Array(p.level)].map((_, i) => (
+                                                                <div key={i} className="w-1 h-3 rounded-full bg-white/20" />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
+                                                <span className="text-sm text-gray-400">{team.players.length} Jogadores</span>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleEditBenchTeam(index); }}
+                                                    className="flex items-center gap-1 text-xs text-primary hover:text-white bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                                                >
+                                                    <Plus size={14} /> Completar Time
+                                                </button>
+                                            </div>
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Match Control Panel */}
                     {(selectedTeamIds.length === 2 || useStore.getState().currentMatch.isActive) && (
                         <div className="pt-8 border-t border-white/5 animate-in slide-in-from-bottom-8">
                             <MatchControlPanel
-                                teamA={generatedTeams.teams.find(t => t.id === selectedTeamIds[0])}
-                                teamB={generatedTeams.teams.find(t => t.id === selectedTeamIds[1])}
+                                teamA={[...generatedTeams.teams, ...(generatedTeams.benchTeams ?? [])].find(t => t.id === selectedTeamIds[0])}
+                                teamB={[...generatedTeams.teams, ...(generatedTeams.benchTeams ?? [])].find(t => t.id === selectedTeamIds[1])}
                             />
                         </div>
                     )}

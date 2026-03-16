@@ -11,12 +11,19 @@ export interface TeamGenerationConfig {
     playersPerTeam: number;
     random?: boolean;
     fillGenericGks?: boolean;
+    redistributeBench?: boolean;
+}
+
+export interface TeamGenerationResult {
+    teams: Team[];
+    bench: Player[];
+    benchTeams?: Team[];
 }
 
 export const generateTeams = (
     players: Player[],
     config: TeamGenerationConfig = { playersPerTeam: 5 }
-): { teams: Team[], bench: Player[] } => {
+): TeamGenerationResult => {
 
     const { playersPerTeam, random = false, fillGenericGks = true } = config;
 
@@ -59,10 +66,10 @@ export const generateTeams = (
             totalLevel: calculateTotalLevel(teamPlayers)
         }));
 
-        return {
+        return applyBenchRedistribution({
             teams: generatedTeams,
             bench: benchPlayers
-        };
+        }, config);
     }
     // --- END RANDOM MODE ---
 
@@ -171,8 +178,52 @@ export const generateTeams = (
         totalLevel: calculateTotalLevel(teamPlayers)
     }));
 
-    return {
+    return applyBenchRedistribution({
         teams: generatedTeams,
         bench: [...benchGks, ...benchLinePlayers]
-    };
+    }, config);
 };
+
+// ─── Helper: redistribute bench into 2 sub-teams ─────────────────────────
+
+function applyBenchRedistribution(
+    result: { teams: Team[]; bench: Player[] },
+    config: TeamGenerationConfig
+): TeamGenerationResult {
+    const { redistributeBench = false, random = false } = config;
+
+    if (!redistributeBench || result.bench.length < 2) {
+        return result;
+    }
+
+    const { teams, bench } = result;
+
+    // Sort bench by level (randomize within same level) or fully random
+    const sortedBench = random
+        ? [...bench].sort(() => Math.random() - 0.5)
+        : [...bench].sort((a, b) => {
+            if (b.level !== a.level) return b.level - a.level;
+            return Math.random() - 0.5;
+        });
+
+    // Snake draft into 2 sub-teams
+    const groupA: Player[] = [];
+    const groupB: Player[] = [];
+    sortedBench.forEach((p, i) => {
+        const cycle = i % 4;
+        if (cycle === 0 || cycle === 3) groupA.push(p);
+        else groupB.push(p);
+    });
+
+    const nextNum = teams.length + 1;
+    const calcLevel = (ps: Player[]) => ps.reduce((s, p) => s + p.level, 0);
+
+    return {
+        teams,
+        bench: [],
+        benchTeams: [
+            { id: `bench-team-${Date.now()}-1`, name: `Time ${nextNum}`, players: groupA, totalLevel: calcLevel(groupA) },
+            { id: `bench-team-${Date.now()}-2`, name: `Time ${nextNum + 1}`, players: groupB, totalLevel: calcLevel(groupB) },
+        ].filter(t => t.players.length > 0),
+    };
+}
