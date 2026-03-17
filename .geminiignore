@@ -1,0 +1,97 @@
+# Dependências
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Build / distribuição
+dist/
+build/
+out/
+coverage/
+storybook-static/
+
+# Cache / tooling
+.cache/
+.parcel-cache/
+.vite/
+.turbo/
+.eslintcache
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Variáveis de ambiente / segredos
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Arquivos locais de sistema / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testes
+test-results/
+playwright-report/
+cypress/screenshots/
+cypress/videos/
+
+# Arquivos temporários
+tmp/
+temp/
+*.tmp
+
+# Artefatos de upload / export / geração
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.svg
+*.mp4
+*.zip
+
+# Relatórios
+reports/
+artifacts/
+
+# Arquivos de lock opcionais
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Pastas específicas do projeto que normalmente não precisam ser lidas pela IA
+public/mock/
+mocks/
+fixtures/
+
+# Git
+.git/
+.gitignore
+
+# Docker / infra local
+.docker/
+docker-compose.override.yml
+
+# Documentação gerada
+*.generated.*
+generated/
+
+# Arquivos compilados / minificados
+*.min.js
+*.min.css
