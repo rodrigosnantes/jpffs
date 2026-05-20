@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { Play, Square, Goal, ShieldAlert, Flag, ShieldBan, Star, RefreshCw, Lock } from 'lucide-react';
+import { Play, Square, Goal, ShieldAlert, Flag, ShieldBan, Star, RefreshCw, Lock, Loader2 } from 'lucide-react';
+import { useMatchTimer } from '../../hooks/useMatchTimer';
+import { useToast } from '../../contexts/ToastContext';
 import { EventModal } from './EventModal';
 import type { EventType } from '../../types';
 import type { Team } from '../../utils/teamSorter';
@@ -17,44 +19,14 @@ interface MatchControlProps {
 export const MatchControlPanel = ({ teamA, teamB }: MatchControlProps) => {
     const { currentMatch, players, lastMVP, startMatch, pauseMatch, resumeMatch, endMatch, addEvent, resetMatch, clearMVP } = useStore();
     const { isAdmin } = useAuthStore();
+    const { addToast } = useToast();
     const [modalOpen, setModalOpen] = useState(false);
     const [activeTeam, setActiveTeam] = useState<'A' | 'B' | null>(null);
     const [eventType, setEventType] = useState<EventType | null>(null);
-    const [timeDisplay, setTimeDisplay] = useState('10:00');
+    const [isFinishing, setIsFinishing] = useState(false);
+    const { timeDisplay } = useMatchTimer(currentMatch);
 
     // Timer Logic
-    useEffect(() => {
-        let interval: ReturnType<typeof setInterval>;
-
-        const updateTimer = () => {
-            let elapsed = currentMatch.totalElapsedTime;
-
-            if (currentMatch.isActive && currentMatch.startTime) {
-                const startTime = new Date(currentMatch.startTime).getTime();
-                const now = new Date().getTime();
-                elapsed += (now - startTime);
-            }
-
-            const totalDuration = 10 * 60 * 1000; // 10 minutes in ms
-            const remaining = Math.max(0, totalDuration - elapsed);
-
-            const minutes = Math.floor(remaining / 60000);
-            const seconds = Math.floor((remaining % 60000) / 1000);
-
-            setTimeDisplay(
-                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-            );
-        };
-
-        // Update immediately to show correct state (e.g. paused time)
-        updateTimer();
-
-        if (currentMatch.isActive) {
-            interval = setInterval(updateTimer, 1000);
-        }
-
-        return () => clearInterval(interval);
-    }, [currentMatch.isActive, currentMatch.startTime, currentMatch.totalElapsedTime]);
 
     // Make sure we have valid teams either from props (for new match) 
     // or from current match state (if match is live)
@@ -79,6 +51,21 @@ export const MatchControlPanel = ({ teamA, teamB }: MatchControlProps) => {
             ...data,
             team: activeTeam
         });
+
+        setModalOpen(false);
+        setActiveTeam(null);
+        setEventType(null);
+    };
+
+    const handleEndMatch = async () => {
+        setIsFinishing(true);
+        try {
+            await endMatch();
+            addToast({ type: 'info', title: 'Partida Encerrada', subtitle: 'Resultados salvos com sucesso!' });
+        } catch (e) {
+            console.error("Error ending match:", e);
+            setIsFinishing(false);
+        }
     };
 
     const getTeamPlayers = (team: 'A' | 'B') => {
@@ -156,7 +143,7 @@ export const MatchControlPanel = ({ teamA, teamB }: MatchControlProps) => {
                     <div>
                         <p className="text-sm font-bold">Atenção: Jogadores duplicados!</p>
                         <p className="text-xs text-red-300 mt-1">
-                            Os seguintes jogadores estão escalados em ambos os times: <strong>{overlappingPlayers.map(p => p.name).join(', ')}</strong>.
+                            Os seguintes jogadores estão escalados em ambos os times: <strong>{overlappingPlayers.map((p: any) => p.name).join(', ')}</strong>.
                             Você não pode iniciar a partida até resolver essa duplicidade.
                         </p>
                     </div>
@@ -189,8 +176,12 @@ export const MatchControlPanel = ({ teamA, teamB }: MatchControlProps) => {
                                         <Play size={20} className="mr-2" /> Retomar
                                     </Button>
                                 )}
-                                <Button onClick={endMatch} variant="danger">
-                                    <Flag size={20} className="mr-2" /> Encerrar
+                                <Button onClick={handleEndMatch} variant="danger" disabled={isFinishing}>
+                                    {isFinishing ? (
+                                        <><Loader2 size={20} className="mr-2 animate-spin" /> Encerrando...</>
+                                    ) : (
+                                        <><Flag size={20} className="mr-2" /> Encerrar</>
+                                    )}
                                 </Button>
                             </>
                         )
@@ -317,7 +308,7 @@ export const MatchControlPanel = ({ teamA, teamB }: MatchControlProps) => {
                         <Flag className="text-gray-400" /> Timeline do Jogo
                     </h3>
                     <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                        {currentMatch.events.map((event) => (
+                        {currentMatch.events.map((event: any) => (
                             <div key={event.id} className={cn(
                                 "flex items-center gap-4 p-3 rounded-lg border",
                                 event.team === 'A' ? "border-yellow-500/20 bg-yellow-500/5" : "border-blue-500/20 bg-blue-500/5"

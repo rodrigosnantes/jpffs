@@ -1,14 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import { useStore } from '../store/useStore';
 import { Card } from '../components/ui/Card';
 import { ClipboardList, Shield, Check, X, ChevronRight, Users } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const todayISO = () => new Date().toISOString().split('T')[0];
 
 const todayLabel = () =>
     new Date().toLocaleDateString('pt-BR', {
@@ -18,56 +15,31 @@ const todayLabel = () =>
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const Attendance = () => {
-    const { players } = useStore();
+    const { players, currentMatch, attendanceIds, fetchAttendance, toggleAttendance, markAllAttendance, clearAllAttendance } = useStore();
     const navigate = useNavigate();
 
-    const [confirmed, setConfirmed] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null); // player id being toggled
     const [searchTerm, setSearchTerm] = useState('');
 
     // ── Load today's attendance ────────────────────────────────────────────
     useEffect(() => {
-        const load = async () => {
-            const { data } = await supabase.from('attendance').select('player_id').eq('date', todayISO());
-            setConfirmed(new Set((data ?? []).map((r: { player_id: string }) => r.player_id)));
-            setLoading(false);
-        };
-        load();
-    }, []);
+        fetchAttendance().then(() => setLoading(false));
+    }, [fetchAttendance]);
+
+    const isPlayerPlaying = useCallback((playerId: string) => {
+        if (!currentMatch.id || !currentMatch.isActive) return false;
+        const inA = currentMatch.teamAPlayers?.some((p: any) => p.id === playerId);
+        const inB = currentMatch.teamBPlayers?.some((p: any) => p.id === playerId);
+        return !!(inA || inB);
+    }, [currentMatch]);
 
     // ── Toggle presence ────────────────────────────────────────────────────
     const toggle = useCallback(async (playerId: string) => {
         setSaving(playerId);
-        const isConfirmed = confirmed.has(playerId);
-
-        if (isConfirmed) {
-            const { error } = await supabase
-                .from('attendance')
-                .delete()
-                .eq('player_id', playerId)
-                .eq('date', todayISO());
-
-            if (error) {
-                console.error("Failed to delete attendance", error);
-                alert("Erro ao remover presença.");
-            } else {
-                setConfirmed(prev => { const s = new Set(prev); s.delete(playerId); return s; });
-            }
-        } else {
-            const { error } = await supabase
-                .from('attendance')
-                .upsert({ player_id: playerId, date: todayISO(), confirmed: true }, { onConflict: 'player_id,date' });
-
-            if (error) {
-                console.error("Failed to add attendance", error);
-                alert("Erro ao confirmar presença.");
-            } else {
-                setConfirmed(prev => new Set([...prev, playerId]));
-            }
-        }
+        await toggleAttendance(playerId);
         setSaving(null);
-    }, [confirmed]);
+    }, [toggleAttendance]);
 
     // ── Mark all / Clear all ───────────────────────────────────────────────
 
@@ -82,28 +54,20 @@ export const Attendance = () => {
         return matchesName || matchesNickname;
     });
 
-    const markAll = async () => {
-        const rows = activePlayers.map(p => ({ player_id: p.id, date: todayISO(), confirmed: true }));
-        const { error } = await supabase.from('attendance').upsert(rows, { onConflict: 'player_id,date' });
-
-        if (error) {
-            console.error("Failed to mark all", error);
-            alert("Erro ao confirmar presença de todos: " + error.message);
-        } else {
-            // Include previously confirmed inactive so we don't accidentally lose their data in state
-            // but for the UI to be correct, we make sure activePlayers are now added to the set.
-            setConfirmed(prev => new Set([...prev, ...activePlayers.map(p => p.id)]));
-        }
+    const handleMarkAll = async () => {
+        setLoading(true);
+        await markAllAttendance(activePlayers);
+        setLoading(false);
     };
 
-    const clearAll = async () => {
-        // Delete all attendance for today in the DB
-        await supabase.from('attendance').delete().eq('date', todayISO());
-        setConfirmed(new Set());
+    const handleClearAll = async () => {
+        setLoading(true);
+        await clearAllAttendance();
+        setLoading(false);
     };
 
     // Calculate counts strictly based on Active Players
-    const activeConfirmedCount = activePlayers.filter(p => confirmed.has(p.id)).length;
+    const activeConfirmedCount = activePlayers.filter(p => attendanceIds.includes(p.id)).length;
     const allConfirmed = activeConfirmedCount === activePlayers.length && activePlayers.length > 0;
 
     return (
@@ -180,7 +144,7 @@ export const Attendance = () => {
                 {/* Bulk actions */}
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={allConfirmed ? clearAll : markAll}
+                        onClick={allConfirmed ? handleClearAll : handleMarkAll}
                         className="flex items-center gap-1.5 text-xs font-medium border border-white/10 px-3 py-1.5 rounded-lg text-gray-400 hover:text-white hover:border-white/20 transition-colors"
                     >
                         <Users size={13} />
@@ -203,22 +167,31 @@ export const Attendance = () => {
             ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                     {displayedPlayers.map(player => {
-                        const isPresent = confirmed.has(player.id);
+                        const isPresent = attendanceIds.includes(player.id);
                         const isSaving = saving === player.id;
+                        const isPlaying = isPlayerPlaying(player.id);
 
                         return (
                             <button
                                 key={player.id}
                                 onClick={() => toggle(player.id)}
-                                disabled={isSaving}
+                                disabled={isSaving || isPlaying}
                                 className={cn(
                                     'relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 text-center',
                                     isPresent
                                         ? 'bg-green-500/10 border-green-500/50 text-white shadow-lg shadow-green-500/10'
                                         : 'bg-white/3 border-white/5 text-gray-500 hover:border-white/20 hover:text-gray-300',
-                                    isSaving && 'opacity-60 cursor-wait'
+                                    (isSaving || isPlaying) && 'opacity-60 cursor-wait'
                                 )}
                             >
+                                {/* Status overlay for playing */}
+                                {isPlaying && (
+                                    <div className="absolute inset-0 bg-black/60 z-10 rounded-xl flex items-center justify-center p-2">
+                                        <div className="bg-primary/20 border border-primary/40 px-2 py-1 rounded text-[10px] font-black uppercase text-primary tracking-widest">
+                                            Em Jogo
+                                        </div>
+                                    </div>
+                                )}
                                 {/* Status indicator */}
                                 <div className={cn(
                                     'absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center transition-all',

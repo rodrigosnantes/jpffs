@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sidebar } from './Sidebar';
+import { MatchOverlay } from '../match/MatchOverlay';
 import { cn } from '../../utils/cn';
 
 interface LayoutProps {
@@ -16,6 +17,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return (
         <div className="min-h-screen bg-background text-text flex">
             {user && <Sidebar />}
+            {user && <MatchOverlay />}
             <main className={cn(
                 "flex-1 transition-all duration-300 min-h-screen overflow-x-hidden",
                 user && (isSidebarOpen ? "lg:pl-64" : "lg:pl-20")

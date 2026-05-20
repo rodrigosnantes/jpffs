@@ -93,7 +93,8 @@ jpffs/
 │   └── assets/
 │       └── Logo.png             # Logo do JPFFS
 │
-├── *.sql                        # Scripts de migração (múltiplos, executados manualmente no Supabase SQL Editor)
+├── supabase/
+│   └── migrations/              # Scripts de migração SQL (múltiplos, executados manualmente no Supabase)
 ├── roadmap                      # Roadmap de funcionalidades futuras
 ├── .env                         # VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
 ├── package.json

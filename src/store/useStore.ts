@@ -11,6 +11,9 @@ interface AppState {
 
     // Live Match State
     currentMatch: LiveMatchState & { teamAId?: string; teamBId?: string; teamAPlayers?: Player[]; teamBPlayers?: Player[] };
+    
+    // Attendance State
+    attendanceIds: string[];
 
     // UI State
     isSidebarOpen: boolean;
@@ -23,12 +26,18 @@ interface AppState {
     updatePlayer: (id: string, updates: Partial<Player>) => Promise<void>;
     deletePlayer: (id: string) => Promise<void>;
     setGeneratedTeams: (teamsData: { teams: Team[], bench: Player[], benchTeams?: Team[] } | null) => void;
+    
+    // Attendance Actions
+    fetchAttendance: () => Promise<void>;
+    toggleAttendance: (playerId: string) => Promise<void>;
+    markAllAttendance: (players: Player[]) => Promise<void>;
+    clearAllAttendance: () => Promise<void>;
 
     // Match Actions
     startMatch: (teamAInfo: Team, teamBInfo: Team) => Promise<{ error?: string }>;
     pauseMatch: () => void;
     resumeMatch: () => void;
-    endMatch: () => void;
+    endMatch: () => Promise<void>;
     addEvent: (event: Omit<MatchEvent, 'id' | 'timestamp'>) => void;
     resetMatch: () => void;
     clearMVP: () => void;
@@ -48,6 +57,7 @@ export const useStore = create<AppState>((set, get) => ({
         teamBScore: 0,
         events: []
     },
+    attendanceIds: [],
 
     isSidebarOpen: true,
     setSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
@@ -167,6 +177,51 @@ export const useStore = create<AppState>((set, get) => ({
 
     setGeneratedTeams: (teamsData) => set({ generatedTeams: teamsData }),
 
+    fetchAttendance: async () => {
+        const today = new Date().toISOString().split('T')[0];
+        const { data, error } = await supabase
+            .from('attendance')
+            .select('player_id')
+            .eq('date', today);
+
+        if (error) {
+            console.error('Error fetching attendance:', error);
+            return;
+        }
+
+        set({ attendanceIds: (data ?? []).map((r: any) => r.player_id) });
+    },
+
+    toggleAttendance: async (playerId: string) => {
+        const today = new Date().toISOString().split('T')[0];
+        const { attendanceIds } = get();
+        const isConfirmed = attendanceIds.includes(playerId);
+
+        if (isConfirmed) {
+            await supabase.from('attendance').delete().eq('player_id', playerId).eq('date', today);
+            set({ attendanceIds: attendanceIds.filter(id => id !== playerId) });
+        } else {
+            await supabase.from('attendance').upsert({ player_id: playerId, date: today, confirmed: true }, { onConflict: 'player_id,date' });
+            set({ attendanceIds: [...attendanceIds, playerId] });
+        }
+    },
+
+    markAllAttendance: async (players: Player[]) => {
+        const today = new Date().toISOString().split('T')[0];
+        const rows = players.map(p => ({ player_id: p.id, date: today, confirmed: true }));
+        const { error } = await supabase.from('attendance').upsert(rows, { onConflict: 'player_id,date' });
+
+        if (!error) {
+            set({ attendanceIds: players.map(p => p.id) });
+        }
+    },
+
+    clearAllAttendance: async () => {
+        const today = new Date().toISOString().split('T')[0];
+        await supabase.from('attendance').delete().eq('date', today);
+        set({ attendanceIds: [] });
+    },
+
     // Match Actions Implementation
     startMatch: async (teamAInfo, teamBInfo) => {
         // Fetch active season (if any)
@@ -253,7 +308,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     endMatch: async () => {
         const state = get();
-        const { teamAScore, teamBScore, events, id, teamAPlayers, teamBPlayers } = state.currentMatch;
+        const { teamAScore, teamBScore, events, id, teamAPlayers, teamBPlayers, teamAId, teamBId } = state.currentMatch;
         const generatedTeams = state.generatedTeams;
 
         if (!generatedTeams || !id || !teamAPlayers || !teamBPlayers) return;
@@ -325,9 +380,27 @@ export const useStore = create<AppState>((set, get) => ({
         }).filter(p => p.score > 0).sort((a, b) => b.score - a.score);
         const mvp = mvpScores[0] ?? null;
 
-        // 4. Reset Local State
+        // 4. Reset Local State and Remove Played Teams
+        let newGeneratedTeams: AppState['generatedTeams'] = generatedTeams;
+        
+        if (newGeneratedTeams && teamAId && teamBId) {
+            const newTeams = newGeneratedTeams.teams.filter(t => t.id !== teamAId && t.id !== teamBId);
+            const newBenchTeams = newGeneratedTeams.benchTeams?.filter(t => t.id !== teamAId && t.id !== teamBId);
+            
+            if (newTeams.length === 0 && (!newBenchTeams || newBenchTeams.length === 0)) {
+                newGeneratedTeams = null;
+            } else {
+                newGeneratedTeams = {
+                    ...newGeneratedTeams,
+                    teams: newTeams,
+                    benchTeams: newBenchTeams
+                };
+            }
+        }
+
         set((state) => ({
             lastMVP: mvp,
+            generatedTeams: newGeneratedTeams,
             currentMatch: {
                 ...state.currentMatch,
                 isActive: false,
@@ -346,6 +419,24 @@ export const useStore = create<AppState>((set, get) => ({
         // Refresh local player and match lists
         get().fetchPlayers();
         get().fetchMatches();
+
+        // 5. Remove Played Players from Attendance
+        const today = new Date().toISOString().split('T')[0];
+        const playerIdsToRemove = allPlayers.map(p => p.id).filter(id => !id.startsWith('generic-gk-'));
+        
+        if (playerIdsToRemove.length > 0) {
+            const { error: attendanceError } = await supabase
+                .from('attendance')
+                .delete()
+                .eq('date', today)
+                .in('player_id', playerIdsToRemove);
+            
+            if (attendanceError) {
+                console.error('Error removing attendance:', attendanceError);
+            }
+        }
+        
+        await get().fetchAttendance();
     },
 
     clearMVP: () => set({ lastMVP: null }),

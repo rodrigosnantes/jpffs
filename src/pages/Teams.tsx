@@ -3,17 +3,15 @@ import { Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Shield, Users, RefreshCw, Trophy, UserPlus, X, Plus, Shuffle } from 'lucide-react';
+import { Shield, Users, RefreshCw, Trophy, UserPlus, X, Plus, Shuffle, Check } from 'lucide-react';
 import { generateTeams, type Team } from '../utils/teamSorter';
 import type { Player } from '../types';
 import { cn } from '../utils/cn';
 import { MatchControlPanel } from '../components/match/MatchControlPanel';
-import { supabase } from '../lib/supabase';
 
 export const Teams = () => {
-    const { players, generatedTeams, setGeneratedTeams } = useStore();
+    const { players, generatedTeams, setGeneratedTeams, currentMatch, attendanceIds, fetchAttendance } = useStore();
     const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
-    const [confirmedIds, setConfirmedIds] = useState<string[]>([]);
     const [attendanceLoaded, setAttendanceLoaded] = useState(false);
 
     // Sort Config
@@ -25,6 +23,19 @@ export const Teams = () => {
     // Selected teams for the match
     const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
 
+    // ── Synchronize selectedTeamIds when generatedTeams changes ────────────
+    useEffect(() => {
+        if (!generatedTeams) {
+            setSelectedTeamIds([]);
+        } else {
+            setSelectedTeamIds(prev => prev.filter(id => {
+                const inTeams = generatedTeams.teams.some(t => t.id === id);
+                const inBenchTeams = generatedTeams.benchTeams?.some(t => t.id === id);
+                return inTeams || inBenchTeams;
+            }));
+        }
+    }, [generatedTeams]);
+
     // Manual Team State
     const [isManualModalOpen, setIsManualModalOpen] = useState(false);
     const [manualTeamPlayers, setManualTeamPlayers] = useState<Player[]>([]);
@@ -33,21 +44,28 @@ export const Teams = () => {
 
     // Load today's confirmed players
     useEffect(() => {
-        const today = new Date().toISOString().split('T')[0];
-        supabase
-            .from('attendance')
-            .select('player_id')
-            .eq('date', today)
-            .then(({ data }) => {
-                const ids = (data ?? []).map((r: { player_id: string }) => r.player_id);
-                setConfirmedIds(ids);
-                setSelectedPlayerIds(ids); // auto-select all confirmed
-                setAttendanceLoaded(true);
-            });
-    }, []);
+        fetchAttendance().then(() => {
+            // Auto-select all confirmed EXCEPT those currently playing
+            const playingIds = new Set([
+                ...(currentMatch.teamAPlayers?.map(p => p.id) || []),
+                ...(currentMatch.teamBPlayers?.map(p => p.id) || [])
+            ]);
+            
+            const availableIds = attendanceIds.filter(id => !currentMatch.isActive || !playingIds.has(id));
+            setSelectedPlayerIds(availableIds); 
+            setAttendanceLoaded(true);
+        });
+    }, [currentMatch.isActive, currentMatch.teamAPlayers, currentMatch.teamBPlayers, fetchAttendance, attendanceIds.length]);
+
+    const isPlayerPlaying = (playerId: string) => {
+        if (!currentMatch.id || !currentMatch.isActive) return false;
+        const inA = currentMatch.teamAPlayers?.some((p: any) => p.id === playerId);
+        const inB = currentMatch.teamBPlayers?.some((p: any) => p.id === playerId);
+        return !!(inA || inB);
+    };
 
     // Only show players confirmed in attendance
-    const attendedPlayers = players.filter(p => confirmedIds.includes(p.id));
+    const attendedPlayers = players.filter(p => attendanceIds.includes(p.id));
 
     const handleTogglePlayer = (id: string) => {
         if (selectedPlayerIds.includes(id)) {
@@ -267,7 +285,7 @@ export const Teams = () => {
                             </h2>
                             <div className="flex items-center gap-3">
                                 <span className="text-sm text-gray-400">
-                                    {confirmedIds.length} confirmados · {selectedPlayerIds.length} selecionados
+                                    {attendanceIds.length} confirmados · {selectedPlayerIds.length} selecionados
                                 </span>
                             </div>
                         </div>
@@ -392,29 +410,63 @@ export const Teams = () => {
                         ) : (
                             <>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                                    {attendedPlayers.map(player => (
-                                        <div
-                                            key={player.id}
-                                            onClick={() => handleTogglePlayer(player.id)}
-                                            className={cn(
-                                                "cursor-pointer p-3 rounded-lg border transition-all duration-200 flex items-center justify-between",
-                                                selectedPlayerIds.includes(player.id)
-                                                    ? "bg-primary/10 border-primary text-white"
-                                                    : "bg-surface border-white/5 text-gray-400 hover:border-white/20"
-                                            )}
-                                        >
-                                            <div className="flex items-center gap-3">
+                                    {attendedPlayers.map(player => {
+                                        const isSelected = selectedPlayerIds.includes(player.id);
+                                        const isPlaying = isPlayerPlaying(player.id);
+                                        
+                                        return (
+                                            <button
+                                                key={player.id}
+                                                onClick={() => handleTogglePlayer(player.id)}
+                                                className={cn(
+                                                    "relative group flex items-center justify-between p-3 rounded-xl border transition-all duration-200",
+                                                    isSelected 
+                                                        ? "bg-primary/10 border-primary/40 shadow-sm" 
+                                                        : "bg-white/5 border-white/5 hover:border-white/20",
+                                                    isPlaying && "opacity-60"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className={cn(
+                                                        "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border transition-colors",
+                                                        isSelected ? "bg-primary text-background border-primary" : "bg-white/5 text-gray-400 border-white/10"
+                                                    )}>
+                                                        {(player.nickname || player.name).substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <div className={cn(
+                                                            "text-sm font-semibold transition-colors",
+                                                            isSelected ? "text-white" : "text-gray-400"
+                                                        )}>
+                                                            {player.nickname || player.name}
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                                            <span className={cn(
+                                                                "text-[10px] uppercase font-bold tracking-wider",
+                                                                player.position === 'Goalkeeper' ? "text-yellow-500" : "text-gray-500"
+                                                            )}>
+                                                                {player.position === 'Goalkeeper' ? 'Goleiro' : 'Linha'}
+                                                            </span>
+                                                            {isPlaying && (
+                                                                <>
+                                                                    <span className="w-1 h-1 rounded-full bg-gray-600" />
+                                                                    <span className="text-[10px] uppercase font-black text-primary tracking-widest bg-primary/10 px-1 rounded-sm">
+                                                                        Em Jogo
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                                 <div className={cn(
-                                                    "w-2 h-2 rounded-full",
-                                                    player.position === 'Goalkeeper' ? "bg-yellow-500" : "bg-blue-400"
-                                                )} />
-                                                <span className="font-medium">{player.nickname || player.name}</span>
-                                            </div>
-                                            <div className="text-xs font-mono bg-black/20 px-1.5 py-0.5 rounded">
-                                                Lvl {player.level}
-                                            </div>
-                                        </div>
-                                    ))}
+                                                    "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                                    isSelected ? "bg-primary border-primary" : "border-white/10"
+                                                )}>
+                                                    {isSelected && <Check size={12} className="text-background" strokeWidth={3} />}
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
 
                                 <div className="mt-6 flex gap-3">
