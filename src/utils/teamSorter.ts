@@ -186,17 +186,20 @@ export const generateTeams = (
 
 // ─── Helper: redistribute bench into 2 sub-teams ─────────────────────────
 
-function applyBenchRedistribution(
-    result: { teams: Team[]; bench: Player[] },
+export function applyBenchRedistribution(
+    result: { teams: Team[]; bench: Player[]; benchTeams?: Team[] },
     config: TeamGenerationConfig
 ): TeamGenerationResult {
     const { redistributeBench = false, random = false } = config;
 
     if (!redistributeBench || result.bench.length < 2) {
-        return result;
+        return {
+            ...result,
+            benchTeams: result.benchTeams || []
+        };
     }
 
-    const { teams, bench } = result;
+    const { teams, bench, benchTeams = [] } = result;
 
     // Sort bench by level (randomize within same level) or fully random
     const sortedBench = random
@@ -215,13 +218,14 @@ function applyBenchRedistribution(
         else groupB.push(p);
     });
 
-    const nextNum = teams.length + 1;
+    const nextNum = teams.length + benchTeams.length + 1;
     const calcLevel = (ps: Player[]) => ps.reduce((s, p) => s + p.level, 0);
 
     return {
         teams,
         bench: [],
         benchTeams: [
+            ...benchTeams,
             { id: `bench-team-${Date.now()}-1`, name: `Time ${nextNum}`, players: groupA, totalLevel: calcLevel(groupA) },
             { id: `bench-team-${Date.now()}-2`, name: `Time ${nextNum + 1}`, players: groupB, totalLevel: calcLevel(groupB) },
         ].filter(t => t.players.length > 0),
